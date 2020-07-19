@@ -18,6 +18,9 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
+#ifdef ESP8266
+
 #define ARDUINO_MAIN
 #include "wiring_private.h"
 #include "pins_arduino.h"
@@ -130,8 +133,10 @@ typedef struct {
 static interrupt_handler_t interrupt_handlers[16] = { {0, 0, 0, 0}, };
 static uint32_t interrupt_reg = 0;
 
-void ICACHE_RAM_ATTR interrupt_handler(void*)
+void ICACHE_RAM_ATTR interrupt_handler(void *arg, void *frame)
 {
+  (void) arg;
+  (void) frame;
   uint32_t status = GPIE;
   GPIEC = status;//clear them interrupts
   uint32_t levels = GPI;
@@ -260,3 +265,5 @@ extern void attachInterruptArg(uint8_t pin, voidFuncPtrArg handler, void* arg, i
 extern void detachInterrupt(uint8_t pin) __attribute__ ((weak, alias("__detachInterrupt")));
 
 };
+
+#endif  // ESP8266 
