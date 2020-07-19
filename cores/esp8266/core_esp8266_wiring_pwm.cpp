@@ -21,8 +21,6 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifdef ESP8266
-
 #include <Arduino.h>
 #include "core_esp8266_waveform.h"
 
@@ -81,5 +79,3 @@ extern void analogWriteFreq(uint32_t freq) __attribute__((weak, alias("__analogW
 extern void analogWriteRange(uint32_t range) __attribute__((weak, alias("__analogWriteRange")));
 
 };
-
-#endif  // ESP8266
