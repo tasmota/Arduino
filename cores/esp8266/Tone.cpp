@@ -1,21 +1,21 @@
 /*
   Tone.cpp
-
+  
   A Tone Generator Library for the ESP8266
-
+  
   Original Copyright (c) 2016 Ben Pirt. All rights reserved.
   This file is part of the esp8266 core for Arduino environment.
-
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
   version 2.1 of the License, or (at your option) any later version.
-
+  
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Lesser General Public License for more details.
-
+  
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
@@ -34,7 +34,9 @@ static void _startTone(uint8_t _pin, uint32_t high, uint32_t low, uint32_t durat
     return;
   }
 
-  pinMode(_pin, OUTPUT);
+  if (!(_toneMap & 1UL << _pin)) {
+    pinMode(_pin, OUTPUT);
+  }
 
   high = std::max(high, (uint32_t)microsecondsToClockCycles(25));  // new 20KHz maximum tone frequency,
   low = std::max(low, (uint32_t)microsecondsToClockCycles(25));   // (25us high + 25us low period = 20KHz)
@@ -43,7 +45,7 @@ static void _startTone(uint8_t _pin, uint32_t high, uint32_t low, uint32_t durat
   duration += high + low - 1;
   duration -= duration % (high + low);
   if (startWaveformClockCycles(_pin, high, low, duration)) {
-    _toneMap |= 1 << _pin;
+    _toneMap |= 1UL << _pin;
   }
 }
 
@@ -86,6 +88,6 @@ void noTone(uint8_t _pin) {
     return;
   }
   stopWaveform(_pin);
-  _toneMap &= ~(1 << _pin);
+  _toneMap &= ~(1UL << _pin);
   digitalWrite(_pin, 0);
 }
