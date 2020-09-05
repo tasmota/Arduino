@@ -41,8 +41,8 @@ extern void __analogWriteResolution(int res) {
 }
 
 extern void __analogWriteFreq(uint32_t freq) {
-  if (freq < 100) {
-    freq = 100;
+  if (freq < 40) {
+    freq = 40;
   } else if (freq > 60000) {
     freq = 60000;
   } else {
