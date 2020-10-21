@@ -8,7 +8,7 @@ For details, see http://sourceforge.net/projects/libb64
 #ifndef BASE64_CENCODE_H
 #define BASE64_CENCODE_H
 
-#define BASE64_CHARS_PER_LINE 72
+#define BASE64_CHARS_PER_LINE -1   //Tasmota Issue 9587 no linefeed
 
 #define base64_encode_expected_len_nonewlines(n) ((((4 * (n)) / 3) + 3) & ~3)
 #define base64_encode_expected_len(n) \
