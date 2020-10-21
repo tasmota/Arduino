@@ -13,7 +13,7 @@ void base64_init_encodestate(base64_encodestate* state_in){
   state_in->step = step_A;
   state_in->result = 0;
   state_in->stepcount = 0;
-  state_in->stepsnewline = BASE64_CHARS_PER_LINE;
+  state_in->stepsnewline = -1;
 }
 
 
