@@ -3,17 +3,17 @@
  ...mostly rewritten by Paul Stoffregen...
  Copyright (c) 2009-10 Hernando Barragan.  All right reserved.
  Copyright 2011, Paul Stoffregen, paul@pjrc.com
-
+ 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
-
+ 
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
-
+ 
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
@@ -53,13 +53,14 @@ class String {
         // if the initial value is null or invalid, or if memory allocation
         // fails, the string will be marked as invalid (i.e. "if (s)" will
         // be false).
-        String(const char *cstr = nullptr);
+        String() {
+            init();
+        }
+        String(const char *cstr);
         String(const String &str);
         String(const __FlashStringHelper *str);
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-        String(String &&rval);
-        String(StringSumHelper &&rval);
-#endif
+        String(String &&rval) noexcept;
+        String(StringSumHelper &&rval) noexcept;
         explicit String(char c);
         explicit String(unsigned char, unsigned char base = 10);
         explicit String(int, unsigned char base = 10);
@@ -68,7 +69,9 @@ class String {
         explicit String(unsigned long, unsigned char base = 10);
         explicit String(float, unsigned char decimalPlaces = 2);
         explicit String(double, unsigned char decimalPlaces = 2);
-        ~String(void);
+        ~String() {
+            invalidate();
+        }
 
         // memory management
         // return true on success, false on failure (in which case, the string
@@ -95,10 +98,8 @@ class String {
         String & operator =(const String &rhs);
         String & operator =(const char *cstr);
         String & operator = (const __FlashStringHelper *str);
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-        String & operator =(String &&rval);
-        String & operator =(StringSumHelper &&rval);
-#endif
+        String & operator =(String &&rval) noexcept;
+        String & operator =(StringSumHelper &&rval) noexcept;
 
         // concatenate (works w/ built-in types)
 
@@ -219,7 +220,9 @@ class String {
         }
 
         // character access
-        char charAt(unsigned int index) const;
+        char charAt(unsigned int index) const {
+            return operator[](index);
+        }
         void setCharAt(unsigned int index, char c);
         char operator [](unsigned int index) const;
         char& operator [](unsigned int index);
@@ -275,11 +278,11 @@ class String {
         // parsing/conversion
         long toInt(void) const;
         float toFloat(void) const;
-	double toDouble(void) const;
+        double toDouble(void) const;
 
     protected:
         // Contains the string info when we're not in SSO mode
-        struct _ptr { 
+        struct _ptr {
             char *   buff;
             uint16_t cap;
             uint16_t len;
@@ -288,8 +291,8 @@ class String {
         enum { SSOSIZE = sizeof(struct _ptr) + 4 - 1 }; // Characters to allocate space for SSO, must be 12 or more
         struct _sso {
             char     buff[SSOSIZE];
-            unsigned char len   : 7; // Ensure only one byte is allocated by GCC for the bitfields
-            unsigned char isSSO : 1;
+            unsigned char len    : 7; // Ensure only one byte is allocated by GCC for the bitfields
+            unsigned char isHeap : 1;
         } __attribute__((packed)); // Ensure that GCC doesn't expand the flag byte to a 32-bit word for alignment issues
         enum { CAPACITY_MAX = 65535 }; // If typeof(cap) changed from uint16_t, be sure to update this enum to the max value storable in the type
         union {
@@ -297,28 +300,30 @@ class String {
             struct _sso sso;
         };
         // Accessor functions
-        inline bool isSSO() const { return sso.isSSO; }
+        inline bool isSSO() const { return !sso.isHeap; }
         inline unsigned int len() const { return isSSO() ? sso.len : ptr.len; }
         inline unsigned int capacity() const { return isSSO() ? (unsigned int)SSOSIZE - 1 : ptr.cap; } // Size of max string not including terminal NUL
-        inline void setSSO(bool set) { sso.isSSO = set; }
+        inline void setSSO(bool set) { sso.isHeap = !set; }
         inline void setLen(int len) { if (isSSO()) sso.len = len; else ptr.len = len; }
         inline void setCapacity(int cap) { if (!isSSO()) ptr.cap = cap; }
-	inline void setBuffer(char *buff) { if (!isSSO()) ptr.buff = buff; }
+        inline void setBuffer(char *buff) { if (!isSSO()) ptr.buff = buff; }
         // Buffer accessor functions
         inline const char *buffer() const { return (const char *)(isSSO() ? sso.buff : ptr.buff); }
         inline char *wbuffer() const { return isSSO() ? const_cast<char *>(sso.buff) : ptr.buff; } // Writable version of buffer
 
     protected:
-        void init(void);
+        void init(void) {
+            sso.isHeap = 0;
+            sso.len = 0;
+            sso.buff[0] = 0;
+        }
         void invalidate(void);
         unsigned char changeBuffer(unsigned int maxStrLen);
 
         // copy and move
         String & copy(const char *cstr, unsigned int length);
         String & copy(const __FlashStringHelper *pstr, unsigned int length);
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-        void move(String &rhs);
-#endif
+        void move(String &rhs) noexcept;
 };
 
 class StringSumHelper: public String {

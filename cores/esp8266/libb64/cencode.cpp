@@ -117,7 +117,7 @@ int base64_encode_blockend(char* code_out, base64_encodestate* state_in){
 
 int base64_encode_chars(const char* plaintext_in, int length_in, char* code_out){
   base64_encodestate _state;
-  base64_init_encodestate(&_state);
+  base64_init_encodestate_nonewlines(&_state);
   int len = base64_encode_block(plaintext_in, length_in, code_out, &_state);
   return len + base64_encode_blockend((code_out + len), &_state);
 }
