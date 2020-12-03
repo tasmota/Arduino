@@ -38,9 +38,11 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
+#ifndef WAVEFORM_LOCKED_PHASE
+
 #include <Arduino.h>
 #include "ets_sys.h"
-#include "core_esp8266_waveform.h"
+#include "core_esp8266_waveform_pwm.h"
 #include "user_interface.h"
 extern "C" {
 
@@ -620,3 +622,5 @@ static ICACHE_RAM_ATTR void timer1Interrupt() {
 }
 
 };
+
+#endif
