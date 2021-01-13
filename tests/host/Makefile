@@ -62,17 +62,20 @@ VERBC   = @echo "C   $@";
 VERBCXX = @echo "C++ $@";
 VERBLD  = @echo "LD  $@";
 VERBAR  = @echo "AR  $@";
+VERBRANLIB = @echo "RANLIB $@";
 else
 VERBC   =
 VERBCXX =
 VERBLD  =
 VERBAR  =
+VERBRANLIB =
 endif
 
 $(shell mkdir -p $(BINDIR))
 
 CORE_CPP_FILES := \
 	$(addprefix $(abspath $(CORE_PATH))/,\
+		debug.cpp \
 		StreamString.cpp \
 		Stream.cpp \
 		WString.cpp \
@@ -99,9 +102,13 @@ CORE_CPP_FILES := \
 		FatLib/FatFileLFN.cpp \
 		FatLib/FatFilePrint.cpp \
 		FatLib/FatFileSFN.cpp \
+		FatLib/FatFormatter.cpp \
 		FatLib/FatVolume.cpp \
-		FatLib/FmtNumber.cpp \
-		FatLib/StdioStream.cpp \
+		FatLib/FatPartition.cpp \
+		common/FmtNumber.cpp \
+		common/FsStructs.cpp \
+		common/FsDateTime.cpp \
+		common/PrintBasic.cpp \
 	) \
 	$(abspath $(LIBRARIES_PATH)/SDFS/src/SDFS.cpp) \
 	$(abspath $(LIBRARIES_PATH)/SD/src/SD.cpp) \
@@ -226,8 +233,11 @@ test: $(OUTPUT_BINARY)			# run host test for CI
 	$(OUTPUT_BINARY)
 
 .PHONY: clean
-clean: clean-objects
-	rm -rf $(LCOV)
+clean: clean-lcov clean-objects
+
+.PHONY: clean-lcov
+clean-lcov:
+	rm -rf $(LCOV_DIRECTORY)
 
 .PHONY: clean-objects
 clean-objects:
@@ -293,7 +303,9 @@ ARDUINO_LIBS := \
 		IPAddress.cpp \
 		Updater.cpp \
 		base64.cpp \
+		LwipIntf.cpp \
 		LwipIntfCB.cpp \
+		debug.cpp \
 	) \
 	$(addprefix $(abspath ../../libraries/ESP8266WiFi/src)/,\
 		ESP8266WiFi.cpp \
@@ -323,12 +335,6 @@ OPT_ARDUINO_LIBS ?= \
 			LEAmDNS_Structs.cpp \
 			LEAmDNS_Transfer.cpp \
 			ESP8266mDNS.cpp \
-			LEAmDNS2Host.cpp \
-			LEAmDNS2Host_Control.cpp \
-			LEAmDNS2Host_Debug.cpp \
-			LEAmDNS2Host_Structs.cpp \
-			LEAmDNS2Host_Transfer.cpp \
-			LEAmDNS2_Backbone.cpp \
 		) \
 		ArduinoOTA/ArduinoOTA.cpp \
 		DNSServer/src/DNSServer.cpp \
@@ -379,7 +385,7 @@ FULLCORE_OBJECTS_ISOLATED = $(FULLCORE_OBJECTS:%.o=$(BINDIR)/%.o)
 
 $(BINDIR)/fullcore.a: $(FULLCORE_OBJECTS_ISOLATED)
 	$(VERBAR) $(AR) rc $@ $^
-	$(VERBAR) $(RANLIB) $@
+	$(VERBRANLIB) $(RANLIB) $@
 
 ifeq ($(INO),)
 
@@ -392,7 +398,7 @@ else
 	$(VERBLD) $(CXX) $(LDFLAGS) $< $(BINDIR)/fullcore.a $(LIBSSL) -o $@
 	mkdir -p $(BINDIR)/$(lastword $(subst /, ,$@))
 	ln -sf $@ $(BINDIR)/$(lastword $(subst /, ,$@))
-	@echo "----> $(BINDIR)/ <----"
+	@echo "----> $(BINDIR)/$(lastword $(subst /, ,$@))/$(lastword $(subst /, ,$@)) <----"
 	@[ "$(R)" = noexec ] && echo '(not running it, use `make R="[<options>]" ...` for valgrind+gdb)' || $(dir $(MAKEFILE))/valgdb $@ $(R)
 
 FORCE:
