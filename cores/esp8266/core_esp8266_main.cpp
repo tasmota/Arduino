@@ -35,6 +35,10 @@ extern "C" {
 #include <core_version.h>
 #include "gdb_hooks.h"
 #include "flash_quirks.h"
+#include "hwdt_app_entry.h"
+#include <umm_malloc/umm_malloc.h>
+#include <core_esp8266_non32xfer.h>
+#include "core_esp8266_vm.h"
 
 #define LOOP_TASK_PRIORITY 1
 #define LOOP_QUEUE_SIZE    1
@@ -172,7 +176,7 @@ extern "C" bool ets_post_rom(uint8 prio, ETSSignal sig, ETSParam par);
 
 extern "C" bool IRAM_ATTR ets_post(uint8 prio, ETSSignal sig, ETSParam par) {
   uint32_t saved;
-  asm volatile ("rsr %0,ps":"=a" (saved));
+  __asm__ __volatile__ ("rsr %0,ps":"=a" (saved));
   bool rc=ets_post_rom(prio, sig, par);
   xt_wsr_ps(saved);
   return rc;
@@ -195,13 +199,18 @@ static void loop_wrapper() {
     }
     loop();
     loop_end();
+    if (serialEventRun) {
+        serialEventRun();
+    }
     esp_schedule();
 }
 
 static void loop_task(os_event_t *events) {
     (void) events;
     s_cycles_at_yield_start = ESP.getCycleCount();
+    ESP.resetHeap();
     cont_run(g_pcont, &loop_wrapper);
+    ESP.setDramHeap();
     if (cont_check(g_pcont) != 0) {
         panic();
     }
@@ -253,6 +262,7 @@ void init_done() {
     std::set_terminate(__unhandled_exception_cpp);
     do_global_ctors();
     esp_schedule();
+    ESP.setDramHeap();
 }
 
 /* This is the entry point of the application.
@@ -311,18 +321,29 @@ extern "C" void app_entry_redefinable(void)
     /* Call the entry point of the SDK code. */
     call_user_start();
 }
-
 static void app_entry_custom (void) __attribute__((weakref("app_entry_redefinable")));
 
 extern "C" void app_entry (void)
 {
+    umm_init();
     return app_entry_custom();
 }
 
 extern "C" void preinit (void) __attribute__((weak));
 extern "C" void preinit (void)
 {
-    /* do nothing by default */
+    /* does nothing, kept for backward compatibility */
+}
+
+extern "C" void __disableWiFiAtBootTime (void) __attribute__((weak));
+extern "C" void __disableWiFiAtBootTime (void)
+{
+    // Starting from arduino core v3: wifi is disabled at boot time
+    // WiFi.begin() or WiFi.softAP() will wake WiFi up
+    wifi_set_opmode_current(0/*WIFI_OFF*/);
+    wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
+    wifi_fpm_open();
+    wifi_fpm_do_sleep(0xFFFFFFF);
 }
 
 extern "C" void user_init(void) {
@@ -339,7 +360,23 @@ extern "C" void user_init(void) {
 
     cont_init(g_pcont);
 
+#if defined(DEBUG_ESP_HWDT) || defined(DEBUG_ESP_HWDT_NOEXTRA4K)
+    debug_hwdt_init();
+#endif
+
+#if defined(UMM_HEAP_EXTERNAL)
+    install_vm_exception_handler();
+#endif
+  
+#if defined(NON32XFER_HANDLER) || defined(MMU_IRAM_HEAP)
+    install_non32xfer_exception_handler();
+#endif
+
+#if defined(MMU_IRAM_HEAP)
+    umm_init_iram();
+#endif
     preinit(); // Prior to C++ Dynamic Init (not related to above init() ). Meant to be user redefinable.
+    __disableWiFiAtBootTime(); // default weak function disables WiFi
 
     ets_task(loop_task,
         LOOP_TASK_PRIORITY, s_loop_queue,
