@@ -242,12 +242,28 @@ else:
         LIBS=["lwip2-536-feat"]
     )
 
+
 #
-# Waveform
+# MMU
 #
-if "PIO_FRAMEWORK_ARDUINO_WAVEFORM_LOCKED_PHASE" in flatten_cppdefines:
-    env.Append(CPPDEFINES=[("WAVEFORM_LOCKED_PHASE", 1)])
-# PIO_FRAMEWORK_ARDUINO_WAVEFORM_LOCKED_PWM will be used by default
+if "PIO_FRAMEWORK_MMU__16KB_CACHE__32KB_IRAM__16KB_IRAM_2NDHEAP" in flatten_cppdefines:
+    env.Append(
+        CPPDEFINES=[("MMU_IRAM_SIZE", 0x8000), ("MMU_ICACHE_SIZE", 0x4000), ("MMU_SEC_HEAP", 0x40108000), ("MMU_SEC_HEAP_SIZE", 0x4000)]
+    )
+elif "PIO_FRAMEWORK_MMU__16KB_CACHE__48KB_IRAM_SHARED_2NDHEAP" in flatten_cppdefines:
+    env.Append(
+        CPPDEFINES=[("MMU_IRAM_SIZE", 0xc000), ("MMU_ICACHE_SIZE", 0x4000), ("MMU_IRAM_HEAP", "")]
+    )
+elif "PIO_FRAMEWORK_MMU__16KB_CACHE__48KB_IRAM" in flatten_cppdefines:
+    env.Append(
+        CPPDEFINES=[("MMU_IRAM_SIZE", 0xc000), ("MMU_ICACHE_SIZE", 0x4000)]
+    )
+# "PIO_FRAMEWORK_MMU__32KB_CACHE__32KB_IRAM__LEGACY" (default)
+else:
+    env.Append(
+        CPPDEFINES=[("MMU_IRAM_SIZE", 0x8000), ("MMU_ICACHE_SIZE", 0x8000)]
+    )
+
 
 #
 # Exceptions
