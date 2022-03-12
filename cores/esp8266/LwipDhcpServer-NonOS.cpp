@@ -23,7 +23,7 @@
 // these functions must exists as-is with "C" interface,
 // nonos-sdk calls them at boot time and later
 
-#include <lwip/init.h> // LWIP_VERSION
+#include <lwip/init.h>  // LWIP_VERSION
 
 #include <lwip/netif.h>
 #include "LwipDhcpServer.h"
@@ -35,8 +35,7 @@ DhcpServer dhcpSoftAP(&netif_git[SOFTAP_IF]);
 
 extern "C"
 {
-
-    void dhcps_start(struct ip_info *info, netif* apnetif)
+    void dhcps_start(struct ip_info* info, netif* apnetif)
     {
         // apnetif is esp interface, replaced by lwip2's
         // netif_git[SOFTAP_IF] interface in constructor
@@ -51,7 +50,7 @@ extern "C"
         //                  trying to change legacy behavor
         // `fw_has_started_softap_dhcps` will be read in DhcpServer::DhcpServer
         // which is called when c++ ctors are initialized, specifically
-        // dhcpSoftAP intialized with AP interface number above.
+        // dhcpSoftAP initialized with AP interface number above.
         fw_has_started_softap_dhcps = 1;
 #endif
     }
@@ -61,4 +60,4 @@ extern "C"
         dhcpSoftAP.end();
     }
 
-} // extern "C"
+}  // extern "C"

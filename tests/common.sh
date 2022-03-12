@@ -9,16 +9,13 @@ function skip_ino()
     read -d '' skiplist << EOL || true
 /#attic/
 /AvrAdcLogger/
-/BackwardCompatibility/
 /examplesV1/
-/ExFatFormatter/
-/ExFatLogger/
-/ExFatUnicodeTest/
 /RtcTimestampTest/
 /SoftwareSpi/
-/STM32Test/
+/TeensyDmaAdcLogger/
 /TeensyRtcTimestamp/
 /TeensySdioDemo/
+/TeensySdioLogger/
 /UserChipSelectFunction/
 /UserSPIDriver/
 EOL
@@ -70,8 +67,6 @@ function build_sketches()
     local sketches=$(find $srcpath -name *.ino | sort)
     print_size_info >size.log
     export ARDUINO_IDE_PATH=$arduino
-    local pwm_phase=""
-    [ $(( $build_rem % 2 )) -eq 0 ] && pwm_phase="--waveform_phase"
     local testcnt=0
     for sketch in $sketches; do
         testcnt=$(( ($testcnt + 1) % $build_mod ))
@@ -119,8 +114,8 @@ function build_sketches()
             export MSYS2_ARG_CONV_EXC="*"
             export MSYS_NO_PATHCONV=1
         fi
-        echo "$build_cmd $pwm_phase $sketch"
-        time ($build_cmd $pwm_phase $sketch >build.log)
+        echo "$build_cmd $sketch"
+        time ($build_cmd $sketch >build.log)
         local result=$?
         if [ $result -ne 0 ]; then
             echo "Build failed ($1)"
