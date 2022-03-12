@@ -33,8 +33,8 @@ static uint32_t analogMap = 0;
 static uint16_t analogFreq = 1000;
 
 extern void __analogWriteFreq(uint32_t freq) {
-  if (freq < 100) {
-    analogFreq = 100;
+  if (freq < 40) {
+    analogFreq = 40;
   } else if (freq > 60000) {
     analogFreq = 60000;
   } else {
