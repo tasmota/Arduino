@@ -1,5 +1,6 @@
-Arduino core for ESP8266 WiFi chip
-===========================================
+Arduino core for ESP8266 WiFi chip  [![GitHub Releases](https://img.shields.io/github/downloads/tasmota/Arduino/total?label=downloads)](https://github.com/tasmota/Arduino/releases/latest)
+==========================================
+
 
 # Quick links
 
