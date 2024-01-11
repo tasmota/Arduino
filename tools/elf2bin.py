@@ -38,7 +38,7 @@ def get_elf_entry(elf, path):
     lines = p.stdout.readlines()
     for line in lines:
         if 'Entry point address' in line:
-            words = re.split('\s+', line)
+            words = re.split(r'\s+', line)
             entry_point = words[-2]
             return int(entry_point, 16)
     raise Exception('Unable to find entry point in file "' + elf + '"')
@@ -48,7 +48,7 @@ def get_segment_size_addr(elf, segment, path):
     lines = p.stdout.readlines()
     for line in lines:
         if segment in line:
-            words = re.split('\s+', line)
+            words = re.split(r'\s+', line)
             size = int(words[3], 16)
             addr = int(words[4], 16)
             return [ size, addr ]
