@@ -1,6 +1,6 @@
 {
     "name": "framework-arduinoespressif8266",
     "description": "Arduino Wiring-based Framework for Tasmota (ESP8266 Core)",
-    "url": "https://github.com/tasmota/Arduino/tree/2.7.4.9",
-    "version": "2.7.4.9"
+    "url": "https://github.com/tasmota/Arduino",
+    "version": "2.7.5"
 }
