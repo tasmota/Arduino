@@ -32,11 +32,15 @@ IPAddress::IPAddress() {
 }
 
 IPAddress::IPAddress(IPType type) {
-  if (type == IPv6) {
-    _ip = *IP6_ADDR_ANY;
-  } else {
+#if LWIP_IPV6
+    if (type == IPv6) {
+        _ip = *IP6_ADDR_ANY;
+    } else {
+        _ip = *IP_ADDR_ANY;
+    }
+#else
     _ip = *IP_ADDR_ANY;
-  }
+#endif
 }
 
 bool IPAddress::isSet () const {
