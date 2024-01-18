@@ -98,8 +98,6 @@ class IPAddress: public Printable {
         IPAddress(u32_t address) { ctor32(address); }
         IPAddress(int address) { ctor32(address); }
         IPAddress(const uint8_t *address);
-
-        IPType type() const { return (IPType)_ip.type; }
         
         bool fromString(const char *address);
         bool fromString(const String &address) { return fromString(address.c_str()); }
@@ -198,6 +196,8 @@ class IPAddress: public Printable {
         IPAddress(const ip_addr_t& lwip_addr) { ip_addr_copy(_ip, lwip_addr); }
         IPAddress(const ip_addr_t* lwip_addr) { ip_addr_copy(_ip, *lwip_addr); }
 
+        IPType type() const { return (IPType)_ip.type; }
+        
         IPAddress& operator=(const ip_addr_t& lwip_addr) { ip_addr_copy(_ip, lwip_addr); return *this; }
         IPAddress& operator=(const ip_addr_t* lwip_addr) { ip_addr_copy(_ip, *lwip_addr); return *this; }
 
