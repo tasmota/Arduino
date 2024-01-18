@@ -43,6 +43,7 @@ public:
 
   // initialize, start listening on specified port. 
   // Returns 1 if successful, 0 if there are no sockets available to use
+  uint8_t begin(IPAddress ip, uint16_t port) { return begin(port); };  // for compatibility with Core3
   uint8_t begin(uint16_t port) override;
   // Finish with the UDP connetion
   void stop() override;

@@ -55,6 +55,21 @@ struct ip_addr: ipv4_addr { };
 // fully backward compatible with legacy IPv4-only Arduino's
 // with unchanged footprint when IPv6 is disabled
 
+enum IPType : uint8_t
+{
+    IPv4 = IPADDR_TYPE_V4,
+    IPv6 = IPADDR_TYPE_V6
+};
+
+typedef enum {
+    ESP_IP6_ADDR_IS_UNKNOWN,
+    ESP_IP6_ADDR_IS_GLOBAL,
+    ESP_IP6_ADDR_IS_LINK_LOCAL,
+    ESP_IP6_ADDR_IS_SITE_LOCAL,
+    ESP_IP6_ADDR_IS_UNIQUE_LOCAL,
+    ESP_IP6_ADDR_IS_IPV4_MAPPED_IPV6
+} esp_ip6_addr_type_t;
+
 class IPAddress: public Printable {
     private:
 
@@ -76,6 +91,7 @@ class IPAddress: public Printable {
     public:
         // Constructors
         IPAddress();
+        IPAddress(IPType type);
         IPAddress(const IPAddress& from);
         IPAddress(uint8_t first_octet, uint8_t second_octet, uint8_t third_octet, uint8_t fourth_octet);
         IPAddress(uint32_t address) { ctor32(address); }
@@ -83,6 +99,8 @@ class IPAddress: public Printable {
         IPAddress(int address) { ctor32(address); }
         IPAddress(const uint8_t *address);
 
+        IPType type() const { return (IPType)_ip.type; }
+        
         bool fromString(const char *address);
         bool fromString(const String &address) { return fromString(address.c_str()); }
 
@@ -140,7 +158,7 @@ class IPAddress: public Printable {
         IPAddress& operator=(const IPAddress&) = default;
 
         virtual size_t printTo(Print& p) const;
-        String toString() const;
+        String toString(bool includeZone = false) const;
 
         /*
                 check if input string(arg) is a valid IPV4 address or not.
@@ -201,6 +219,11 @@ class IPAddress: public Printable {
         bool isV6() const { return IP_IS_V6_VAL(_ip); }
         void setV6() { IP_SET_TYPE_VAL(_ip, IPADDR_TYPE_V6); }
 
+        // compatibility with Core3 version
+        esp_ip6_addr_type_t addr_type() const;
+        void to_ip_addr_t(ip_addr_t* addr) const;
+        IPAddress& from_ip_addr_t(const ip_addr_t* addr);
+        
     protected:
         bool fromString6(const char *address);
 
@@ -221,6 +244,7 @@ class IPAddress: public Printable {
 };
 
 extern CONST IPAddress INADDR_ANY;
+extern const IPAddress IN6ADDR_ANY;
 extern const IPAddress INADDR_NONE;
 
 #endif

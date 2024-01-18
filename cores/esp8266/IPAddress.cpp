@@ -31,6 +31,14 @@ IPAddress::IPAddress() {
     _ip = *IP_ANY_TYPE; // lwIP's v4-or-v6 generic address
 }
 
+IPAddress::IPAddress(IPType type) {
+  if (type == IPv6) {
+    _ip = *IP6_ADDR_ANY;
+  } else {
+    _ip = *IP_ADDR_ANY;
+  }
+}
+
 bool IPAddress::isSet () const {
     return !ip_addr_isany(&_ip);
 }
@@ -159,7 +167,7 @@ size_t IPAddress::printTo(Print& p) const {
     return n;
 }
 
-String IPAddress::toString() const
+String IPAddress::toString(bool includeZone) const
 {
     StreamString sstr;
 #if LWIP_IPV6
@@ -238,6 +246,43 @@ bool IPAddress::fromString6(const char *address) {
 
     setV6();
     return true;
+}
+
+// compatibillity with Core3
+
+static esp_ip6_addr_type_t esp_netif_ip6_get_addr_type(const ip6_addr_t* ip6_addr)
+{
+    ip6_addr_t* lwip_ip6_info = (ip6_addr_t*)ip6_addr;
+
+    if (ip6_addr_isglobal(lwip_ip6_info)) {
+        return ESP_IP6_ADDR_IS_GLOBAL;
+    } else if (ip6_addr_islinklocal(lwip_ip6_info)) {
+        return ESP_IP6_ADDR_IS_LINK_LOCAL;
+    } else if (ip6_addr_issitelocal(lwip_ip6_info)) {
+        return ESP_IP6_ADDR_IS_SITE_LOCAL;
+    } else if (ip6_addr_isuniquelocal(lwip_ip6_info)) {
+        return ESP_IP6_ADDR_IS_UNIQUE_LOCAL;
+    } else if (ip6_addr_isipv4mappedipv6(lwip_ip6_info)) {
+        return ESP_IP6_ADDR_IS_IPV4_MAPPED_IPV6;
+    }
+    return ESP_IP6_ADDR_IS_UNKNOWN;
+
+}
+
+esp_ip6_addr_type_t IPAddress::addr_type() const {
+    if(_ip.type != IPv6){
+        return ESP_IP6_ADDR_IS_UNKNOWN;
+    }
+    return esp_netif_ip6_get_addr_type(&(_ip.u_addr.ip6));
+}
+
+void IPAddress::to_ip_addr_t(ip_addr_t* addr) const {
+    ip_addr_copy(*addr, _ip);
+}
+
+IPAddress& IPAddress::from_ip_addr_t(const ip_addr_t* addr) {
+    ip_addr_copy(_ip, *addr);
+    return *this;
 }
 
 #endif
