@@ -240,7 +240,6 @@ extern "C"
 {
 void close_all_fs(void);
 void littlefs_request_end(void);
-void spiffs_request_end(void);
 }
 
 #ifndef FS_NO_GLOBALS
@@ -253,11 +252,6 @@ using fs::SeekCur;
 using fs::SeekEnd;
 using fs::FSInfo;
 using fs::FSConfig;
-using fs::SPIFFSConfig;
 #endif //FS_NO_GLOBALS
-
-#if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_SPIFFS)
-extern fs::FS SPIFFS __attribute__((deprecated("SPIFFS has been deprecated. Please consider moving to LittleFS or other filesystems.")));
-#endif
 
 #endif //FS_H
