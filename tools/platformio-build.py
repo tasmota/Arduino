@@ -93,8 +93,6 @@ env.Append(
         "-Wl,-wrap,system_restart_local",
         "-Wl,-wrap,spi_flash_read",
         "-u", "app_entry",
-        "-u", "_printf_float",
-        "-u", "_scanf_float",
         "-u", "_DebugExceptionVector",
         "-u", "_DoubleExceptionVector",
         "-u", "_KernelExceptionVector",
