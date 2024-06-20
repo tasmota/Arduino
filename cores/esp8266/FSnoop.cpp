@@ -11,7 +11,6 @@ extern "C"
 void close_all_fs(void)
 {
     littlefs_request_end();
-    spiffs_request_end();
 }
 
 // default weak definitions
@@ -22,12 +21,6 @@ void littlefs_request_end(void) __attribute__((weak));
 void littlefs_request_end(void)
 {
     //ets_printf("debug: noop: littlefs_request_end\n");
-}
-
-void spiffs_request_end(void) __attribute__((weak));
-void spiffs_request_end(void)
-{
-    //ets_printf("debug: noop: spiffs_request_end\n");
 }
 
 }
