@@ -184,15 +184,6 @@ public:
     bool     _autoFormat;
 };
 
-class SPIFFSConfig : public FSConfig
-{
-public:
-    static constexpr uint32_t FSId = 0x53504946;
-    SPIFFSConfig(bool autoFormat = true) : FSConfig(FSId, autoFormat) { }
-
-    // Inherit _type and _autoFormat
-    // nothing yet, enableTime TBD when SPIFFS has metadate
-};
 
 class FS
 {
