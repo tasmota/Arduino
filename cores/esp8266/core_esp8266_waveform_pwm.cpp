@@ -1,3 +1,7 @@
+/* Modified to work around a fault in the NMI handling, which
+   can result in the system locking up and hard WDT crashes.
+*/
+
 /*
   esp8266_waveform - General purpose waveform generation and control,
                      supporting outputs on all pins in parallel.
@@ -44,7 +48,11 @@
 #include "ets_sys.h"
 #include "core_esp8266_waveform_pwm.h"
 #include "user_interface.h"
+
 extern "C" {
+
+// Linker magic
+void usePWMFixedNMI() {};
 
 // Maximum delay between IRQs
 #define MAXIRQUS (10000)
@@ -436,6 +444,30 @@ static inline ICACHE_RAM_ATTR uint32_t earliest(uint32_t a, uint32_t b) {
     return (da < db) ? a : b;
 }
 
+// NMI crash workaround
+// Sometimes the NMI fails to return, stalling the CPU.  When this happens,
+// the next NMI gets a return address /inside the NMI handler function/.
+// We work around this by caching the last NMI return address, and restoring
+// the epc3 and eps3 registers to the previous values if the observed epc3
+// happens to be pointing to the _NMILevelVector function.
+extern void _NMILevelVector();
+extern void _UserExceptionVector_1(); // the next function after _NMILevelVector
+static inline ICACHE_RAM_ATTR void nmiCrashWorkaround() {
+  static uintptr_t epc3_backup, eps3_backup;
+
+  uintptr_t epc3, eps3;
+  __asm__ __volatile__("rsr %0,epc3; rsr %1,eps3":"=a"(epc3),"=a" (eps3));
+  if ((epc3 < (uintptr_t) &_NMILevelVector) || (epc3 >= (uintptr_t) &_UserExceptionVector_1)) {
+    // Address is good; save backup
+    epc3_backup = epc3;
+    eps3_backup = eps3;
+  } else {
+    // Address is inside the NMI handler -- restore from backup
+    __asm__ __volatile__("wsr %0,epc3; wsr %1,eps3"::"a"(epc3_backup),"a"(eps3_backup));
+  }
+}
+
+
 // The SDK and hardware take some time to actually get to our NMI code, so
 // decrement the next IRQ's timer value by a bit so we can actually catch the
 // real CPU cycle counter we want for the waveforms.
@@ -452,9 +484,11 @@ static inline ICACHE_RAM_ATTR uint32_t earliest(uint32_t a, uint32_t b) {
 #endif
 
 // When the time to the next edge is greater than this, RTI and set another IRQ to minimize CPU usage
-#define MINIRQTIME microsecondsToClockCycles(4)
+#define MINIRQTIME microsecondsToClockCycles(6)
 
 static ICACHE_RAM_ATTR void timer1Interrupt() {
+  nmiCrashWorkaround();
+
   // Flag if the core is at 160 MHz, for use by adjust()
   bool turbo = (*(uint32_t*)0x3FF00014) & 1 ? true : false;
 
