@@ -236,7 +236,7 @@ static void _cleanAndRemovePWM(PWMState *p, int pin) {
 
 
 // Disable PWM on a specific pin (i.e. when a digitalWrite or analogWrite(0%/100%))
-ICACHE_RAM_ATTR bool _stopPWM(uint8_t pin) {
+ICACHE_RAM_ATTR bool _stopPWM(int pin) {
   if (!((1<<pin) & pwmState.mask)) {
     return false; // Pin not actually active
   }
