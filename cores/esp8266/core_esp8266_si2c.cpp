@@ -46,15 +46,18 @@ static inline __attribute__((always_inline)) bool SDA_READ(const int twi_sda)
 }
 static inline __attribute__((always_inline)) void SCL_LOW(const int twi_scl)
 {
-    GPES = (1 << twi_scl);
+//    GPES = (1 << twi_scl);
+    (twi_scl != 16) ? GPES = (1 << twi_scl) : GP16O &= ~1;
 }
 static inline __attribute__((always_inline)) void SCL_HIGH(const int twi_scl)
 {
-    GPEC = (1 << twi_scl);
+//    GPEC = (1 << twi_scl);
+    (twi_scl != 16) ? GPEC = (1 << twi_scl) : GP16O |= 1;
 }
 static inline __attribute__((always_inline)) bool SCL_READ(const int twi_scl)
 {
-    return (GPI & (1 << twi_scl)) != 0;
+//    return (GPI & (1 << twi_scl)) != 0;
+    return (twi_scl != 16) ? (GPI & (1 << twi_scl)) != 0 : (GP16I & 0x01);
 }
 
 
@@ -208,7 +211,12 @@ void Twi::init(unsigned char sda, unsigned char scl)
     twi_sda = sda;
     twi_scl = scl;
     pinMode(twi_sda, INPUT_PULLUP);
-    pinMode(twi_scl, INPUT_PULLUP);
+//    pinMode(twi_scl, INPUT_PULLUP);
+    if (16 == twi_scl) {
+      pinMode(twi_scl, OUTPUT);
+    } else {
+      pinMode(twi_scl, INPUT_PULLUP);
+    }
     twi_setClock(preferred_si2c_clock);
     twi_setClockStretchLimit(150000L); // default value is 150 mS
 }
