@@ -1,5 +1,5 @@
 /*
- spiffs_hal.cpp - SPI read/write/erase functions for SPIFFS.
+ flash_hal.cpp - SPI read/write/erase functions.
  Copyright (c) 2015 Ivan Grokhotkov. All rights reserved.
  This file is part of the esp8266 core for Arduino environment.
 
