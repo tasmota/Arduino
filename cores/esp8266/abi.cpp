@@ -21,8 +21,16 @@
 #include <debug.h>
 #include <Arduino.h>
 #include <cxxabi.h>
+#include <memory>
 
 using __cxxabiv1::__guard;
+
+#if __GNUC__ >= 16 && !defined(__GXX_RTTI)
+bool std::_Sp_make_shared_tag::_S_eq(const std::type_info&) noexcept
+{
+    return false;
+}
+#endif
 
 // Debugging helper, last allocation which returned NULL
 extern void *umm_last_fail_alloc_addr;
