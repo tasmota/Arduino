@@ -73,8 +73,17 @@ env.Append(
     ASFLAGS=[
         "-mlongcalls",
         "-mtext-section-literals",
+        "-Wno-frame-address",
+        "-fno-builtin-memcpy",
+        "-fno-builtin-memset",
+        "-fno-builtin-bzero",
     ],
     ASPPFLAGS=[
+        "-Wno-frame-address",
+        "-mlongcalls",
+        "-fno-builtin-memcpy",
+        "-fno-builtin-memset",
+        "-fno-builtin-bzero",
         "-x", "assembler-with-cpp",
     ],
 
@@ -85,7 +94,16 @@ env.Append(
         "-Wno-implicit-function-declaration",
         "-Wl,-EL",
         "-fno-inline-functions",
-        "-nostdlib"
+        "-nostdlib",
+        "-Wno-frame-address",
+        "-mlongcalls",
+        "-fno-builtin-memcpy",
+        "-fno-builtin-memset",
+        "-fno-builtin-bzero",
+        "-Wno-old-style-declaration",
+        "-fzero-init-padding-bits=all",
+        "-fno-malloc-dce",
+        "-Wno-enum-int-mismatch",
     ],
 
     # General options that are passed to the C and C++ compilers
@@ -102,7 +120,31 @@ env.Append(
         "-Wall",
         "-Werror=return-type",
         "-free",
-        "-fipa-pta"
+        "-fipa-pta",
+        "-Wno-frame-address",
+        "-fno-builtin-memcpy",
+        "-fno-builtin-memset",
+        "-fno-builtin-bzero",
+        "-Wno-error=unused-function",
+        "-Wno-error=unused-variable",
+        "-Wno-error=unused-but-set-variable",
+        "-Wno-error=deprecated-declarations",
+        "-Wno-error=extra",
+        "-Wno-unused-parameter",
+        "-Wno-sign-compare",
+        "-Wno-enum-conversion",
+        "-gdwarf-4",
+        "-ggdb",
+        "-freorder-blocks",
+        "-mno-target-align",
+        "-Wno-address",
+        "-Wno-use-after-free",
+        "-Wno-xor-used-as-pow",
+        "-Wno-calloc-transposed-args",
+        "-fstrict-volatile-bitfields",
+        "-fno-jump-tables",
+        "-fno-tree-switch-conversion",
+        "-MMD",
     ],
 
     # General options that are passed to the C++ compiler
@@ -111,6 +153,9 @@ env.Append(
         "-fno-rtti",
         "-fno-sized-deallocation",
         "-std=gnu++17",
+        "-fno-exceptions",
+        "-Wno-self-move",
+        "-Wno-dangling-reference",
         # GCC 16+ xtensa-esp-elf toolchain: gthr-default.h is the POSIX threads
         # variant; the ESP8266 bare-metal sysroot's pthread.h provides no types
         # without _POSIX_THREADS. Pre-define the posix gthr guard and force-include
@@ -124,6 +169,13 @@ env.Append(
         "-Os",
         ] + DYNCONFIG_FLAGS + [
         "-nostdlib",
+        "-Wno-frame-address",
+        "-mlongcalls",
+        "-fno-builtin-memcpy",
+        "-fno-builtin-memset",
+        "-fno-builtin-bzero",
+        "-nostartfiles",
+        "-fno-rtti",
         "-Wl,--no-check-sections",
         "-Wl,-static",
         "-Wl,--gc-sections",
@@ -134,7 +186,7 @@ env.Append(
         "-u", "_DoubleExceptionVector",
         "-u", "_KernelExceptionVector",
         "-u", "_NMIExceptionVector",
-        "-u", "_UserExceptionVector"
+        "-u", "_UserExceptionVector",
     ],
 
     CPPDEFINES=[
