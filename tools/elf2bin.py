@@ -33,8 +33,15 @@ fsizeb = { '512K': 0, '256K': 1, '1M': 2, '2M': 3, '4M': 4, '8M': 8, '16M': 9 }
 crcsize_offset = 4088
 crcval_offset = 4092
 
+def get_tool_path(path, tool):
+    for prefix in ("xtensa-esp-elf", "xtensa-lx106-elf"):
+        tool_path = os.path.join(path, prefix + "-" + tool)
+        if os.path.isfile(tool_path):
+            return tool_path
+    raise FileNotFoundError("Unable to find Xtensa tool: " + tool)
+
 def get_elf_entry(elf, path):
-    p = subprocess.Popen([path + "/xtensa-lx106-elf-readelf", '-h', elf], stdout=subprocess.PIPE, universal_newlines=True )
+    p = subprocess.Popen([get_tool_path(path, "readelf"), '-h', elf], stdout=subprocess.PIPE, universal_newlines=True )
     lines = p.stdout.readlines()
     for line in lines:
         if 'Entry point address' in line:
@@ -44,7 +51,7 @@ def get_elf_entry(elf, path):
     raise Exception('Unable to find entry point in file "' + elf + '"')
 
 def get_segment_size_addr(elf, segment, path):
-    p = subprocess.Popen([path + '/xtensa-lx106-elf-objdump', '-h', '-j', segment,  elf], stdout=subprocess.PIPE, universal_newlines=True )
+    p = subprocess.Popen([get_tool_path(path, "objdump"), '-h', '-j', segment,  elf], stdout=subprocess.PIPE, universal_newlines=True )
     lines = p.stdout.readlines()
     for line in lines:
         if segment in line:
@@ -57,7 +64,7 @@ def get_segment_size_addr(elf, segment, path):
 def read_segment(elf, segment, path):
     fd, tmpfile = tempfile.mkstemp()
     os.close(fd)
-    p = subprocess.check_call([path + "/xtensa-lx106-elf-objcopy", '-O', 'binary', '--only-section=' + segment, elf, tmpfile], stdout=subprocess.PIPE)
+    p = subprocess.check_call([get_tool_path(path, "objcopy"), '-O', 'binary', '--only-section=' + segment, elf, tmpfile], stdout=subprocess.PIPE)
     with open(tmpfile, "rb") as f:
         raw = f.read()
     os.remove(tmpfile)

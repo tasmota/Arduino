@@ -132,7 +132,16 @@ void timer0_detachInterrupt(void);
 #undef abs
 #endif
 
+#ifdef __cplusplus
+}
+template<typename T>
+inline auto abs(T value) -> decltype(value > 0 ? value : -value) {
+    return value > 0 ? value : -value;
+}
+extern "C" {
+#else
 #define abs(x) ((x)>0?(x):-(x))
+#endif
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 #define round(x)     ((x)>=0?(long)((x)+0.5):(long)((x)-0.5))
 #define radians(deg) ((deg)*DEG_TO_RAD)

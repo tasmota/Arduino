@@ -83,38 +83,51 @@ bool isMinus (const char (&arr) [N], unsigned i)
     return arr[i] == '-' && isDecimal(arr[i+1]);
 }
 
+// atoi: recursive C++11 constexpr (accumulates digits)
+template<unsigned N> constexpr
+int atoiAcc (const char (&arr) [N], unsigned i, int acc)
+{
+    return isDecimal(arr[i]) ? atoiAcc(arr, i+1, acc*10 + arr[i] - '0') : acc;
+}
+
 template<unsigned N> constexpr
 int atoi (const char (&arr) [N], unsigned i)
 {
-    return ({ // <= c++11 requires a "return statement"
-        int ret = 0;
-        int sign = 1;
-        if (arr[i] == '-')
-        {
-            sign = -1;
-            i++;
-        }
-        while (isDecimal(arr[i]))
-            ret = 10*ret + arr[i++] - '0';
-        ret * sign;
-    });
+    return arr[i] == '-' ? -atoiAcc(arr, i+1, 0) : atoiAcc(arr, i, 0);
+}
+
+// skipDigits: advance past a run of decimal digits
+template<unsigned N> constexpr
+unsigned skipDigits (const char (&arr) [N], unsigned i)
+{
+    return isDecimal(arr[i]) ? skipDigits(arr, i+1) : i;
+}
+
+// skipNonToken: advance past characters that are neither a digit nor a '-<digit>' pair
+template<unsigned N> constexpr
+unsigned skipNonToken (const char (&arr) [N], unsigned i)
+{
+    return (arr[i] && !isMinus(arr, i) && !isDecimal(arr[i]))
+               ? skipNonToken(arr, i+1) : i;
+}
+
+// findNthToken: locate the start index of the f-th integer token
+template<unsigned N> constexpr
+unsigned findNthToken (const char (&arr) [N], unsigned i, unsigned f)
+{
+    return (f == 0 || !arr[i])
+               ? i
+               : findNthToken(arr,
+                              skipNonToken(arr,
+                                           skipDigits(arr,
+                                                      isMinus(arr, i) ? i+1 : i)),
+                              f-1);
 }
 
 template<unsigned N> constexpr
 int parseNthInteger (const char (&arr) [N], unsigned f)
 {
-    return ({ // <= c++11 requires a "return statement"
-        unsigned i = 0;
-        while (f && arr[i])
-        {
-            if (isMinus(arr, i))
-                i++;
-            for (; isDecimal(arr[i]); i++);
-            f--;
-            for (; arr[i] && !isMinus(arr, i) && !isDecimal(arr[i]); i++);
-        }
-        atoi(arr, i);
-    });
+    return atoi(arr, findNthToken(arr, 0, f));
 }
 
 }; // namespace conststr

@@ -23,6 +23,7 @@
 //This may be used to change user task stack size:
 //#define CONT_STACKSIZE 4096
 #include <Arduino.h>
+#include <exception>
 #include "Schedule.h"
 extern "C" {
 #include "ets_sys.h"

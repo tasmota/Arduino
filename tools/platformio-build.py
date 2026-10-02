@@ -52,14 +52,35 @@ gzip_switch = []
 FRAMEWORK_DIR = platform.get_package_dir("framework-arduinoespressif8266")
 assert isdir(FRAMEWORK_DIR)
 
+TOOLCHAIN_DIR = platform.get_package_dir("toolchain-xtensa-esp-elf")
+assert isdir(TOOLCHAIN_DIR)
+
+# GCC 16+ xtensa-esp-elf is a unified multi-target toolchain. The dynconfig
+# plugin selects the ESP8266 configuration: little-endian byte order, correct
+# multilib C++ headers, and target-specific ABI. Without it the compiler
+# defaults to big-endian, which makes the linker refuse to merge object files
+# with the little-endian pre-built SDK libraries.
+from os.path import isfile as _isfile
+_dynconfig = join(TOOLCHAIN_DIR, "lib", "xtensa_esp8266.so")
+DYNCONFIG_FLAGS = ["-mdynconfig=%s" % _dynconfig] if _isfile(_dynconfig) else []
+
+SDK_LIBC_PATH = join(FRAMEWORK_DIR, "tools", "sdk", "libc", "xtensa-lx106-elf", "lib")
+
 if gzip_fw:
     gzip_switch = ["--gzip", "PIO"]
 
 env.Append(
-    ASFLAGS=["-x", "assembler-with-cpp"],
+    ASFLAGS=[
+        "-mlongcalls",
+        "-mtext-section-literals",
+    ],
+    ASPPFLAGS=[
+        "-x", "assembler-with-cpp",
+    ],
 
+    # General options that are passed to the C compiler (C only; not C++)
     CFLAGS=[
-        "-std=gnu99",
+        "-std=gnu17",
         "-Wpointer-arith",
         "-Wno-implicit-function-declaration",
         "-Wl,-EL",
@@ -67,8 +88,10 @@ env.Append(
         "-nostdlib"
     ],
 
+    # General options that are passed to the C and C++ compilers
     CCFLAGS=[
         "-Os",  # optimize for size
+        ] + DYNCONFIG_FLAGS + [
         "-mlongcalls",
         "-mtext-section-literals",
         "-falign-functions=4",
@@ -76,16 +99,30 @@ env.Append(
         "-ffunction-sections",
         "-fdata-sections",
         "-fno-exceptions",
-        "-Wall"
+        "-Wall",
+        "-Werror=return-type",
+        "-free",
+        "-fipa-pta"
     ],
 
+    # General options that are passed to the C++ compiler
     CXXFLAGS=[
+        "-Wno-register",
         "-fno-rtti",
-        "-std=gnu++11"
+        "-fno-sized-deallocation",
+        "-std=gnu++17",
+        # GCC 16+ xtensa-esp-elf toolchain: gthr-default.h is the POSIX threads
+        # variant; the ESP8266 bare-metal sysroot's pthread.h provides no types
+        # without _POSIX_THREADS. Pre-define the posix gthr guard and force-include
+        # the no-op single-thread stub so the full C++ library header chain works.
+        "-D_GLIBCXX_GCC_GTHR_POSIX_H",
+        "-include", join(TOOLCHAIN_DIR, "xtensa-esp-elf", "include", "c++",
+                         "16.2.0", "xtensa-esp-elf", "bits", "gthr-single.h"),
     ],
 
     LINKFLAGS=[
         "-Os",
+        ] + DYNCONFIG_FLAGS + [
         "-nostdlib",
         "-Wl,--no-check-sections",
         "-Wl,-static",
@@ -117,11 +154,10 @@ env.Append(
         join(FRAMEWORK_DIR, "cores", env.BoardConfig().get("build.core"))
     ],
 
-    LIBPATH=[
+    LIBPATH=[SDK_LIBC_PATH] + [
         join("$BUILD_DIR", "ld"),  # eagle.app.v6.common.ld
         join(FRAMEWORK_DIR, "tools", "sdk", "lib"),
-        join(FRAMEWORK_DIR, "tools", "sdk", "ld"),
-        join(FRAMEWORK_DIR, "tools", "sdk", "libc", "xtensa-lx106-elf", "lib")
+        join(FRAMEWORK_DIR, "tools", "sdk", "ld")
     ],
 
     LIBS=[
@@ -146,7 +182,7 @@ env.Append(
                 "--flash_freq", "${__get_board_f_flash(__env__)}",
                 "--flash_size", "${__get_flash_size(__env__)}",
                 "--path", '"%s"' % join(
-                    platform.get_package_dir("toolchain-xtensa"), "bin"),
+                    platform.get_package_dir("toolchain-xtensa-esp-elf"), "bin"),
                 "--out", "$TARGET"
             ] + gzip_switch), "Building $TARGET"),
             suffix=".bin"

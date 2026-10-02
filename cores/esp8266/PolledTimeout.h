@@ -104,15 +104,20 @@ struct TimeUnit
     #undef fractional
   }
 #else
+  // Helper: extract fractional part of a double at compile time.
+  // Separate function avoids GNU statement expressions ({ ... }) which
+  // trigger an ICE in GCC 16 when used inside constexpr.
+  static constexpr double computeFractional (double ticks)
+  {
+    return ticks - (long)ticks;
+  }
+
   static constexpr timeType computeRangeCompensation ()
   {
-    return ({
-      constexpr double number_of_secondTh_in_one_tick = (1.0 * second_th) / ticksPerSecond;
-      constexpr double fractional = number_of_secondTh_in_one_tick - (long)number_of_secondTh_in_one_tick;
-      fractional == 0?
-        1: // no need for compensation
-        (number_of_secondTh_in_one_tick / fractional) + 0.5; // scalar multiplier allowing exact division
-    });
+    return computeFractional((1.0 * second_th) / ticksPerSecond) == 0
+      ? 1  // no need for compensation
+      : (timeType)(((1.0 * second_th) / ticksPerSecond)
+            / computeFractional((1.0 * second_th) / ticksPerSecond) + 0.5);
   }
 #endif
 
