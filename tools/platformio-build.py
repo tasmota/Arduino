@@ -164,7 +164,6 @@ env.Append(
     # General options that are passed to the C++ compiler
     CXXFLAGS=[
         "-Wno-register",
-        "-fno-rtti",
         "-fno-sized-deallocation",
         "-std=gnu++17",
         "-fno-exceptions",
@@ -189,7 +188,6 @@ env.Append(
         "-fno-builtin-memset",
         "-fno-builtin-bzero",
         "-nostartfiles",
-        "-fno-rtti",
         "-Wl,--no-check-sections",
         "-Wl,-static",
         "-Wl,--gc-sections",
