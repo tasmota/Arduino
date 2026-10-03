@@ -53,7 +53,7 @@ gzip_switch = []
 FRAMEWORK_DIR = platform.get_package_dir("framework-arduinoespressif8266")
 assert isdir(FRAMEWORK_DIR)
 
-TOOLCHAIN_DIR = platform.get_package_dir("toolchain-xtensa-esp8266")
+TOOLCHAIN_DIR = platform.get_package_dir("toolchain-xtensa-esp-elf")
 assert isdir(TOOLCHAIN_DIR)
 
 # GCC 16+ xtensa-esp-elf is a unified multi-target toolchain. The dynconfig
