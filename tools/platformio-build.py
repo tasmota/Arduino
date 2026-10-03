@@ -201,6 +201,7 @@ env.Append(
         "-fno-builtin-bzero",
         "-nostartfiles",
         ] + RTTI_FLAGS + [
+        "-Wl,-no-warn-rwx-segments",
         "-Wl,--no-check-sections",
         "-Wl,-static",
         "-Wl,--gc-sections",
