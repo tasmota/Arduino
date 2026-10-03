@@ -52,7 +52,7 @@ gzip_switch = []
 FRAMEWORK_DIR = platform.get_package_dir("framework-arduinoespressif8266")
 assert isdir(FRAMEWORK_DIR)
 
-TOOLCHAIN_DIR = platform.get_package_dir("toolchain-xtensa-esp-elf")
+TOOLCHAIN_DIR = platform.get_package_dir("toolchain-xtensa-esp8266")
 assert isdir(TOOLCHAIN_DIR)
 
 # GCC 16+ xtensa-esp-elf is a unified multi-target toolchain. The dynconfig
@@ -233,8 +233,7 @@ env.Append(
                 "--flash_mode", "$BOARD_FLASH_MODE",
                 "--flash_freq", "${__get_board_f_flash(__env__)}",
                 "--flash_size", "${__get_flash_size(__env__)}",
-                "--path", '"%s"' % join(
-                    platform.get_package_dir("toolchain-xtensa-esp-elf"), "bin"),
+                "--path", '"%s"' % join(TOOLCHAIN_DIR, "bin"),
                 "--out", "$TARGET"
             ] + gzip_switch), "Building $TARGET"),
             suffix=".bin"
