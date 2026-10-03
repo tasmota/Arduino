@@ -34,10 +34,13 @@ crcsize_offset = 4088
 crcval_offset = 4092
 
 def get_tool_path(path, tool):
+    # On Windows executables carry a .exe suffix; check both forms.
+    suffixes = ["", ".exe"] if sys.platform == "win32" else [""]
     for prefix in ("xtensa-esp-elf", "xtensa-lx106-elf"):
-        tool_path = os.path.join(path, prefix + "-" + tool)
-        if os.path.isfile(tool_path):
-            return tool_path
+        for suffix in suffixes:
+            tool_path = os.path.join(path, prefix + "-" + tool + suffix)
+            if os.path.isfile(tool_path):
+                return tool_path
     raise FileNotFoundError("Unable to find Xtensa tool: " + tool)
 
 def get_elf_entry(elf, path):
