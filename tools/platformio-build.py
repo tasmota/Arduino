@@ -78,6 +78,17 @@ if os.path.isdir(cxx_include_base):
         gcc_version = candidates[-1]  # pick the highest version present
 GCC_VERSION = gcc_version
 
+# Parse the major version number for feature guards
+gcc_major = 0
+if GCC_VERSION:
+    try:
+        gcc_major = int(GCC_VERSION.split(".")[0])
+    except (ValueError, IndexError):
+        pass
+
+# -fno-rtti is only supported on GCC >= 16
+RTTI_FLAGS = ["-fno-rtti"] if gcc_major >= 16 else []
+
 SDK_LIBC_PATH = join(FRAMEWORK_DIR, "tools", "sdk", "libc", "xtensa-lx106-elf", "lib")
 
 if gzip_fw:
@@ -164,7 +175,7 @@ env.Append(
     # General options that are passed to the C++ compiler
     CXXFLAGS=[
         "-Wno-register",
-        "-fno-rtti",
+        ] + RTTI_FLAGS + [
         "-fno-sized-deallocation",
         "-std=gnu++17",
         "-fno-exceptions",
@@ -189,7 +200,7 @@ env.Append(
         "-fno-builtin-memset",
         "-fno-builtin-bzero",
         "-nostartfiles",
-        "-fno-rtti",
+        ] + RTTI_FLAGS + [
         "-Wl,--no-check-sections",
         "-Wl,-static",
         "-Wl,--gc-sections",
