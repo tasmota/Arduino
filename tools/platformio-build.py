@@ -24,7 +24,8 @@ https://arduino.cc/en/Reference/HomePage
 
 # Extends: https://github.com/platformio/platform-espressif8266/blob/develop/builder/main.py
 
-from os.path import isdir, join
+import os
+from os.path import isfile, isdir, join
 
 from SCons import Util
 from SCons.Script import Builder, DefaultEnvironment
@@ -60,9 +61,22 @@ assert isdir(TOOLCHAIN_DIR)
 # multilib C++ headers, and target-specific ABI. Without it the compiler
 # defaults to big-endian, which makes the linker refuse to merge object files
 # with the little-endian pre-built SDK libraries.
-from os.path import isfile as _isfile
-_dynconfig = join(TOOLCHAIN_DIR, "lib", "xtensa_esp8266.so")
-DYNCONFIG_FLAGS = ["-mdynconfig=%s" % _dynconfig] if _isfile(_dynconfig) else []
+dynconfig = join(TOOLCHAIN_DIR, "lib", "xtensa_esp8266.so")
+DYNCONFIG_FLAGS = ["-mdynconfig=%s" % dynconfig] if isfile(dynconfig) else []
+
+# Dynamically resolve the GCC version directory under the toolchain's C++
+# include path so the build doesn't break when the toolchain is upgraded.
+# The path looks like: <TOOLCHAIN_DIR>/xtensa-esp-elf/include/c++/<version>/
+cxx_include_base = join(TOOLCHAIN_DIR, "xtensa-esp-elf", "include", "c++")
+gcc_version = None
+if os.path.isdir(cxx_include_base):
+    candidates = sorted(
+        d for d in os.listdir(cxx_include_base)
+        if os.path.isdir(join(cxx_include_base, d))
+    )
+    if candidates:
+        gcc_version = candidates[-1]  # pick the highest version present
+GCC_VERSION = gcc_version
 
 SDK_LIBC_PATH = join(FRAMEWORK_DIR, "tools", "sdk", "libc", "xtensa-lx106-elf", "lib")
 
@@ -156,13 +170,13 @@ env.Append(
         "-fno-exceptions",
         "-Wno-self-move",
         "-Wno-dangling-reference",
-        # GCC 16+ xtensa-esp-elf toolchain: gthr-default.h is the POSIX threads
+        # GCC 15+ xtensa-esp-elf toolchain: gthr-default.h is the POSIX threads
         # variant; the ESP8266 bare-metal sysroot's pthread.h provides no types
         # without _POSIX_THREADS. Pre-define the posix gthr guard and force-include
         # the no-op single-thread stub so the full C++ library header chain works.
         "-D_GLIBCXX_GCC_GTHR_POSIX_H",
         "-include", join(TOOLCHAIN_DIR, "xtensa-esp-elf", "include", "c++",
-                         "16.2.0", "xtensa-esp-elf", "bits", "gthr-single.h"),
+                         GCC_VERSION, "xtensa-esp-elf", "bits", "gthr-single.h"),
     ],
 
     LINKFLAGS=[
