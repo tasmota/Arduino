@@ -167,11 +167,11 @@ public:
             return false;
         }
         int rc = lfs_mkdir(&_lfs, path);
-        if ((rc == 0) && timeCallback()) {
-            time_t now = timeCallback()();
+        if ((rc == 0) && timeCallback) {
+            time_t now = timeCallback();
             // Add metadata with creation time to the directory marker
-            int rc = lfs_setattr(&_lfs, path, 'c', (const void *)&now, sizeof(now));
-            if (rc < 0) {
+            int attr_rc = lfs_setattr(&_lfs, path, 'c', (const void *)&now, sizeof(now));
+            if (attr_rc < 0) {
                 DEBUGV("Unable to set creation time on '%s' to %ld\n", path, (long)now);
             }
         }
@@ -261,7 +261,7 @@ public:
         return true;
     }
 
-    time_t getCreationTime() override {
+    time_t getCreationTime() {
         time_t t;
         uint32_t t32b;
 
@@ -380,7 +380,7 @@ public:
         }
     }
 
-    int availableForWrite () override {
+    size_t availableForWrite () override {
         if (!_opened || !_fd) {
             return 0;
         }

@@ -46,7 +46,7 @@ int File::available() {
     return _p->size() - _p->position();
 }
 
-int File::availableForWrite() {
+size_t File::availableForWrite() {
     if (!_p)
         return false;
 
@@ -441,10 +441,7 @@ bool FS::rename(const String& pathFrom, const String& pathTo) {
 }
 
 time_t FS::getCreationTime() {
-    if (!_impl) {
-        return 0;
-    }
-    return _impl->getCreationTime();
+    return 0;
 }
 
 void FS::setTimeCallback(time_t (*cb)(void)) {
