@@ -116,18 +116,6 @@ public:
     time_t getCreationTime();
     void setTimeCallback(time_t (*cb)(void));
 
-    // Stream::send configuration
-
-    bool inputCanTimeout () override {
-        // unavailable data can't become later available
-        return false;
-    }
-
-    bool outputCanTimeout () override {
-        // free space for write can't increase later
-        return false;
-    }
-
 protected:
     FileImplPtr _p;
     time_t (*timeCallback)(void) = nullptr;
