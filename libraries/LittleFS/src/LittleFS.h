@@ -167,8 +167,8 @@ public:
             return false;
         }
         int rc = lfs_mkdir(&_lfs, path);
-        if ((rc == 0) && _timeCallback) {
-            time_t now = _timeCallback();
+        if ((rc == 0) && timeCallback()) {
+            time_t now = timeCallback()();
             // Add metadata with creation time to the directory marker
             int rc = lfs_setattr(&_lfs, path, 'c', (const void *)&now, sizeof(now));
             if (rc < 0) {
@@ -234,10 +234,10 @@ public:
             return false;
         }
 
-        if(_timeCallback && _tryMount()) {
+        if(timeCallback() && _tryMount()) {
             // Mounting is required to set attributes
 
-            time_t t = _timeCallback();
+            time_t t = timeCallback()();
             rc = lfs_setattr(&_lfs, "/", 'c', &t, 8);
             if (rc != 0) {
                 DEBUGV("lfs_format, lfs_setattr 'c': rc=%d\n", rc);
@@ -494,7 +494,7 @@ public:
             lfs_file_close(_fs->getFS(), _getFD());
             _opened = false;
             DEBUGV("lfs_file_close: fd=%p\n", _getFD());
-            if (_timeCallback && (_flags & LFS_O_WRONLY)) {
+            if (timeCallback() && (_flags & LFS_O_WRONLY)) {
                 // If the file opened with O_CREAT, write the creation time attribute
                 if (_creation) {
                     int rc = lfs_setattr(_fs->getFS(), _name.get(), 'c', (const void *)&_creation, sizeof(_creation));
@@ -503,7 +503,7 @@ public:
                     }
                 }
                 // Add metadata with last write time
-                time_t now = _timeCallback();
+                time_t now = timeCallback()();
                 int rc = lfs_setattr(_fs->getFS(), _name.get(), 't', (const void *)&now, sizeof(now));
                 if (rc < 0) {
                     DEBUGV("Unable to set last write time on '%s' to %ld\n", _name.get(), (long)now);
