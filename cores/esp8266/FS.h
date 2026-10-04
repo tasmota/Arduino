@@ -67,7 +67,7 @@ public:
     size_t readBytes(char *buffer, size_t length) override {
         return read((uint8_t*)buffer, length);
     }
-    int read(uint8_t* buf, size_t size) override;
+    size_t read(uint8_t* buf, size_t size);
     bool seek(uint32_t pos, SeekMode mode);
     bool seek(uint32_t pos) {
         return seek(pos, SeekSet);
@@ -85,13 +85,13 @@ public:
     bool isDirectory() const;
 
     // Arduino "class SD" methods for compatibility
-    //TODO use stream::send / check read(buf,size) result
     template<typename T> size_t write(T &src){
       uint8_t obuf[256];
       size_t doneLen = 0;
       size_t sentLen;
+      int i;
 
-      while (src.available() > (int)sizeof(obuf)){
+      while (src.available() > sizeof(obuf)){
         src.read(obuf, sizeof(obuf));
         sentLen = write(obuf, sizeof(obuf));
         doneLen = doneLen + sentLen;
@@ -131,7 +131,7 @@ public:
 
 protected:
     FileImplPtr _p;
-    time_t (*_timeCallback)(void) = nullptr;
+    time_t (*timeCallback)(void) = nullptr;
 
     // Arduino SD class emulation
     std::shared_ptr<Dir> _fakeDir;
@@ -159,7 +159,7 @@ public:
 protected:
     DirImplPtr _impl;
     FS       *_baseFS;
-    time_t (*_timeCallback)(void) = nullptr;
+    time_t (*timeCallback)(void) = nullptr;
 };
 
 // Backwards compatible, <4GB filesystem usage
@@ -199,20 +199,11 @@ public:
     bool     _autoFormat;
 };
 
-class SPIFFSConfig : public FSConfig
-{
-public:
-    static constexpr uint32_t FSId = 0x53504946;
-    SPIFFSConfig(bool autoFormat = true) : FSConfig(FSId, autoFormat) { }
-
-    // Inherit _type and _autoFormat
-    // nothing yet, enableTime TBD when SPIFFS has metadate
-};
 
 class FS
 {
 public:
-    FS(FSImplPtr impl) : _impl(impl) { _timeCallback = _defaultTimeCB; }
+    FS(FSImplPtr impl) : _impl(impl) { timeCallback = _defaultTimeCB; }
 
     bool setConfig(const FSConfig &cfg);
 
@@ -256,7 +247,7 @@ public:
 protected:
     FSImplPtr _impl;
     FSImplPtr getImpl() { return _impl; }
-    time_t (*_timeCallback)(void) = nullptr;
+    time_t (*timeCallback)(void);
     static time_t _defaultTimeCB(void) { return time(NULL); }
 };
 
@@ -266,7 +257,6 @@ extern "C"
 {
 void close_all_fs(void);
 void littlefs_request_end(void);
-void spiffs_request_end(void);
 }
 
 #ifndef FS_NO_GLOBALS
@@ -279,11 +269,6 @@ using fs::SeekCur;
 using fs::SeekEnd;
 using fs::FSInfo;
 using fs::FSConfig;
-using fs::SPIFFSConfig;
 #endif //FS_NO_GLOBALS
-
-#if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_SPIFFS)
-extern fs::FS SPIFFS __attribute__((deprecated("SPIFFS has been deprecated. Please consider moving to LittleFS or other filesystems.")));
-#endif
 
 #endif //FS_H
