@@ -234,10 +234,10 @@ public:
             return false;
         }
 
-        if(timeCallback() && _tryMount()) {
+        if(timeCallback && _tryMount()) {
             // Mounting is required to set attributes
 
-            time_t t = timeCallback()();
+            time_t t = timeCallback();
             rc = lfs_setattr(&_lfs, "/", 'c', &t, 8);
             if (rc != 0) {
                 DEBUGV("lfs_format, lfs_setattr 'c': rc=%d\n", rc);
@@ -416,7 +416,7 @@ public:
         return result;
     }
 
-    int read(uint8_t* buf, size_t size) override {
+    size_t read(uint8_t* buf, size_t size) override {
         if (!_opened || !_fd | !buf) {
             return 0;
         }
@@ -494,7 +494,7 @@ public:
             lfs_file_close(_fs->getFS(), _getFD());
             _opened = false;
             DEBUGV("lfs_file_close: fd=%p\n", _getFD());
-            if (timeCallback() && (_flags & LFS_O_WRONLY)) {
+            if (timeCallback && (_flags & LFS_O_WRONLY)) {
                 // If the file opened with O_CREAT, write the creation time attribute
                 if (_creation) {
                     int rc = lfs_setattr(_fs->getFS(), _name.get(), 'c', (const void *)&_creation, sizeof(_creation));
@@ -503,7 +503,7 @@ public:
                     }
                 }
                 // Add metadata with last write time
-                time_t now = timeCallback()();
+                time_t now = timeCallback();
                 int rc = lfs_setattr(_fs->getFS(), _name.get(), 't', (const void *)&now, sizeof(now));
                 if (rc < 0) {
                     DEBUGV("Unable to set last write time on '%s' to %ld\n", _name.get(), (long)now);
