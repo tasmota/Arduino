@@ -57,7 +57,7 @@ public:
     // Print methods:
     size_t write(uint8_t) override;
     size_t write(const uint8_t *buf, size_t size) override;
-    size_t availableForWrite() override;
+    size_t availableForWrite();
 
     // Stream methods:
     int available() override;
@@ -74,7 +74,6 @@ public:
     }
     size_t position() const;
     size_t size() const;
-    virtual ssize_t streamRemaining() override { return (ssize_t)size() - (ssize_t)position(); }
     void close();
     operator bool() const;
     const char* name() const;
