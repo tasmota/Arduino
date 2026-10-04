@@ -61,7 +61,14 @@ assert isdir(TOOLCHAIN_DIR)
 # multilib C++ headers, and target-specific ABI. Without it the compiler
 # defaults to big-endian, which makes the linker refuse to merge object files
 # with the little-endian pre-built SDK libraries.
+# GCC 16.1+ moved xtensa_esp8266.so out of the toolchain package into the
+# separate tool-xtensa-esp-elf-gdb package.  Try the toolchain location first
+# (GCC 15.x), then fall back to the GDB tool package (GCC 16.x) which lives
+# as a sibling directory under the shared PlatformIO packages folder.
 dynconfig = join(TOOLCHAIN_DIR, "lib", "xtensa_esp8266.so")
+if not isfile(dynconfig):
+    dynconfig = join(os.path.dirname(TOOLCHAIN_DIR),
+                     "tool-xtensa-esp-elf-gdb", "lib", "xtensa_esp8266.so")
 DYNCONFIG_FLAGS = ["-mdynconfig=%s" % dynconfig] if isfile(dynconfig) else []
 
 # Dynamically resolve the GCC version directory under the toolchain's C++
