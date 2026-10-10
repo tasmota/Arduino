@@ -56,10 +56,17 @@ if gzip_fw:
     gzip_switch = ["--gzip", "PIO"]
 
 env.Append(
-    ASFLAGS=["-x", "assembler-with-cpp"],
+    ASFLAGS=[
+        "-mlongcalls",
+        "-mtext-section-literals",
+    ],
+    ASPPFLAGS=[
+        "-x", "assembler-with-cpp",
+    ],
 
+    # General options that are passed to the C compiler (C only; not C++)
     CFLAGS=[
-        "-std=gnu99",
+        "-std=gnu17",
         "-Wpointer-arith",
         "-Wno-implicit-function-declaration",
         "-Wl,-EL",
@@ -67,6 +74,7 @@ env.Append(
         "-nostdlib"
     ],
 
+    # General options that are passed to the C and C++ compilers
     CCFLAGS=[
         "-Os",  # optimize for size
         "-mlongcalls",
@@ -76,14 +84,19 @@ env.Append(
         "-ffunction-sections",
         "-fdata-sections",
         "-fno-exceptions",
-        "-Wall"
+        "-Wall",
+        "-Werror=return-type",
+        "-free",
+        "-fipa-pta"
     ],
 
+    # General options that are passed to the C++ compiler
     CXXFLAGS=[
         "-fno-rtti",
-        "-std=gnu++11"
+        "-std=gnu++17"
     ],
 
+    # General user options passed to the linker
     LINKFLAGS=[
         "-Os",
         "-nostdlib",
