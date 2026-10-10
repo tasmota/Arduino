@@ -123,7 +123,7 @@ static inline double pgm_read_double_unaligned(const void* addr) {
     uint32_t i[2];
   } u;
   pgm_read_dword_with_offset(addr, u.i[0]);
-  pgm_read_dword_with_offset(addr + 4, u.i[1]);
+  pgm_read_dword_with_offset((const uint8_t*)addr + 4, u.i[1]);
   return u.res;
 }
 
