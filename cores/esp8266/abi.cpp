@@ -108,11 +108,11 @@ void* __dso_handle;
 // no meaningful way to propagate the error, so we trap instead -- the same
 // observable behaviour as an unhandled std::out_of_range exception on a device
 // with no OS-level unwinding support.
-#if !defined(__cpp_exceptions)
+#if __GNUC__ >= 15 && !defined(__cpp_exceptions)
 namespace std {
   void __throw_out_of_range_fmt(const char*, ...) __attribute__((__noreturn__));
   void __throw_out_of_range_fmt(const char*, ...) {
     panic();
   }
 }
-#endif  // !defined(__cpp_exceptions)
+#endif  // __GNUC__ >= 15 && !defined(__cpp_exceptions)
