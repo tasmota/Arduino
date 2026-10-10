@@ -874,7 +874,7 @@ uint32_t SigningVerifier::length()
 
 // We need to use the 2nd stack to do a verification, so do the thunk
 // directly inside the class function for ease of use.
-extern "C" bool SigningVerifier_verify(PublicKey *_pubKey, UpdaterHashClass *hash, const void *signature, uint32_t signatureLen) {
+extern "C" bool __attribute__((used, externally_visible, noinline)) SigningVerifier_verify(PublicKey *_pubKey, UpdaterHashClass *hash, const void *signature, uint32_t signatureLen) {
   if (_pubKey->isRSA()) {
     bool ret;
     unsigned char vrf[hash->len()];

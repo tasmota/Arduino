@@ -34,9 +34,9 @@
 
 extern "C" {
 
-uint32_t *stack_thunk_ptr = NULL;
-uint32_t *stack_thunk_top = NULL;
-uint32_t *stack_thunk_save = NULL;  /* Saved A1 while in BearSSL */
+uint32_t *stack_thunk_ptr __attribute__((used, externally_visible)) = NULL;
+uint32_t *stack_thunk_top __attribute__((used, externally_visible)) = NULL;
+uint32_t *stack_thunk_save __attribute__((used, externally_visible)) = NULL;  /* Saved A1 while in BearSSL */
 uint32_t stack_thunk_refcnt = 0;
 
 /* Largest stack usage seen in the wild at  6120 */
@@ -134,7 +134,7 @@ void stack_thunk_dump_stack()
 }
 
 /* Called when the stack overflow is detected by a thunk.  Main memory is corrupted at this point.  Do not return. */
-void stack_thunk_fatal_overflow()
+void __attribute__((used, externally_visible)) stack_thunk_fatal_overflow()
 {
     ets_printf("FATAL ERROR: BSSL stack overflow\n");
     abort();
