@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <../include/time.h> // See issue #6714
+#include <sys/_tz_structs.h> // __gettzinfo() (newlib 4)
 #include <sys/time.h>
 #include <sys/reent.h>
 #include "sntp.h"
@@ -93,9 +94,10 @@ bool sntp_set_timezone(sint8 timezone_in_hours)
     return sntp_set_timezone_in_seconds(3600 * ((int)timezone_in_hours));
 }
 
-char* sntp_get_real_time(time_t t)
+char* sntp_get_real_time(long t)
 {
-    return ctime(&t);
+    time_t tt = t;
+    return ctime(&tt);
 }
 
 uint32 sntp_get_current_timestamp()
@@ -205,4 +207,3 @@ void configTime(const char* tz, const char* server1, const char* server2, const 
 	
     sntp_init();
 }
-
