@@ -41,7 +41,7 @@ extern "C" {
     // Multi-alignment variant of PSTR, n controls the alignment and should typically be 1 or 4
     // Adapted from AVR-specific code at https://forum.arduino.cc/index.php?topic=194603.0
     // Uses C attribute section instead of ASM block to allow for C language string concatenation ("x" "y" === "xy")
-    #define PSTRN(s,n) (__extension__({static const char __c[] __attribute__((__aligned__(n))) __attribute__((section( "\".irom0.pstr." __FILE__ "." __STRINGIZE(__LINE__) "."  __STRINGIZE(__COUNTER__) "\", \"aSM\", @progbits, 1 #"))) = (s); &__c[0];}))
+    #define PSTRN(s,n) (__extension__({static const char __pstr__[] __attribute__((__aligned__(n))) __attribute__((section( "\".irom0.pstr." __FILE__ "." __STRINGIZE(__LINE__) "."  __STRINGIZE(__COUNTER__) "\", \"aSM\", @progbits, 1 #"))) = (s); &__pstr__[0];}))
 #endif
 #ifndef PSTR
   // PSTR() uses the default alignment defined by PSTR_ALIGN
@@ -60,46 +60,71 @@ extern "C" {
 // b3, b2, b1, b0
 //     w1,     w0
 
+// Cast `addr` to `const uint32_t*`, by discarding 2 LSBs (byte offset)
+#ifdef __cplusplus
+  #define __pgm_cast_u32ptr(addr) reinterpret_cast<const uint32_t*>(reinterpret_cast<uintptr_t>(addr) & ~3)
+#else
+  #define __pgm_cast_u32ptr(addr) (const uint32_t*)((uintptr_t)(addr) & ~3)
+#endif
+
+// Inline assembler: Adjust `word` to byte offset of `addr`
+#define __pgm_adjust_offset(word, addr, res) \
+  __asm__ ( \
+    "ssa8l\t%2\n\t"  /* SAR = (AR[`addr`] & 3) * 8; */ \
+    "srl\t%0, %1"    /* AR[`res`] = AR[`word`] >> SAR; */ \
+    : "=r"(res) : "r"(word), "r"(addr))
+
+// Inline assembler: Extract a "word" (32 bit) from adjacent two: `loword` and `hiword`,
+//                     according to byte offset of `addr`
+#define __pgm_extract_dword(loword, hiword, addr, res) \
+  __asm__ ( \
+    "ssa8l\t%3\n\t"    /* SAR = (AR[`addr`] & 3) * 8; */ \
+    "src\t%0, %2, %1"  /* AR[`res`] = (AR[`hiword`] << 32 | AR[`loword`]) >> SAR; */ \
+    : "=r"(res) : "r"(loword), "r"(hiword), "r"(addr))
+
+// Literature: Xtensa(R) Instruction Set Reference Manual,
+//               "SRC - Shift Right Combined" [p.528], "SRL - Shift Right Logical" [p.529]
+//               and "SSA8L - Set Shift Amount for LE Byte Shift" [p.532]
+
 #define pgm_read_with_offset(addr, res) \
-  asm("extui    %0, %1, 0, 2\n"     /* Extract offset within word (in bytes) */ \
-      "sub      %1, %1, %0\n"       /* Subtract offset from addr, yielding an aligned address */ \
-      "l32i.n   %1, %1, 0x0\n"      /* Load word from aligned address */ \
-      "ssa8l    %0\n"               /* Prepare to shift by offset (in bits) */ \
-      "src      %0, %1, %1\n"       /* Shift right; now the requested byte is the first one */ \
-      :"=r"(res), "=r"(addr) \
-      :"1"(addr) \
-      :);
+  __pgm_adjust_offset(*__pgm_cast_u32ptr(addr), addr, res)
 
 #define pgm_read_dword_with_offset(addr, res) \
-  asm("extui    %0, %1, 0, 2\n"     /* Extract offset within word (in bytes) */ \
-      "sub      %1, %1, %0\n"       /* Subtract offset from addr, yielding an aligned address */ \
-      "l32i     a15, %1, 0\n" \
-      "l32i     %1, %1, 4\n" \
-      "ssa8l    %0\n" \
-      "src      %0, %1, a15\n" \
-      :"=r"(res), "=r"(addr) \
-      :"1"(addr) \
-      :"a15");
+  do { \
+    const uint32_t* __ptr = __pgm_cast_u32ptr(addr); \
+    __pgm_extract_dword(__ptr[0], __ptr[1], addr, res); \
+  } while (0)
 
 static inline uint8_t pgm_read_byte_inlined(const void* addr) {
-  register uint32_t res;
+  uint32_t res;
   pgm_read_with_offset(addr, res);
-  return (uint8_t) res;     /* This masks the lower byte from the returned word */
+  return res;  /* Implicit cast to uint8_t masks the lower byte from the returned word */
 }
 
 /* Although this says "word", it's actually 16 bit, i.e. half word on Xtensa */
 static inline uint16_t pgm_read_word_inlined(const void* addr) {
-  register uint32_t res;
+  uint32_t res;
   pgm_read_with_offset(addr, res);
-  return (uint16_t) res;    /* This masks the lower half-word from the returned word */
+  return res;  /* Implicit cast to uint16_t masks the lower half-word from the returned word */
 }
 
 /* Can't legally cast bits of uint32_t to a float w/o conversion or std::memcpy, which is inefficient. */
 /* The ASM block doesn't care the type, so just pass in what C thinks is a float and return in custom fcn. */
-static inline float pgm_read_float_unaligned(const void *addr) {
-  register float res;
-  pgm_read_with_offset(addr, res);
+static inline float pgm_read_float_unaligned(const void* addr) {
+  float res;
+  pgm_read_dword_with_offset(addr, res);
   return res;
+}
+
+/* Use union evil magic to allow writing to 2 halves of double 8-byte quantity w/o generating a GCC warning. */
+static inline double pgm_read_double_unaligned(const void* addr) {
+  union {
+    double res;
+    uint32_t i[2];
+  } u;
+  pgm_read_dword_with_offset(addr, u.i[0]);
+  pgm_read_dword_with_offset(addr + 4, u.i[1]);
+  return u.res;
 }
 
 #define pgm_read_byte(addr)                pgm_read_byte_inlined(addr)
@@ -107,10 +132,12 @@ static inline float pgm_read_float_unaligned(const void *addr) {
 #ifdef __cplusplus
     #define pgm_read_dword_aligned(addr)   (*reinterpret_cast<const uint32_t*>(addr))
     #define pgm_read_float_aligned(addr)   (*reinterpret_cast<const float*>(addr))
+    #define pgm_read_double_aligned(addr)  (*reinterpret_cast<const double*>(addr))
     #define pgm_read_ptr_aligned(addr)     (*reinterpret_cast<const void* const*>(addr))
 #else
     #define pgm_read_dword_aligned(addr)   (*(const uint32_t*)(addr))
     #define pgm_read_float_aligned(addr)   (*(const float*)(addr))
+    #define pgm_read_double_aligned(addr)  (*(const double*)(addr))
     #define pgm_read_ptr_aligned(addr)     (*(const void* const*)(addr))
 #endif
 
@@ -121,7 +148,7 @@ static inline uint32_t pgm_read_dword_unaligned(const void *addr) {
 }
 
 #define pgm_read_ptr_unaligned(addr)   ((void*)pgm_read_dword_unaligned(addr))
-#define pgm_read_word_unaligned(addr)  ((uint16_t)(pgm_read_dword_unaligned(addr) & 0xffff))
+#define pgm_read_word_unaligned(addr)  ((uint16_t)pgm_read_dword_unaligned(addr))
 
 
 // Allow selection of _aligned or _unaligned, but default to _unaligned for Arduino compatibility
@@ -134,11 +161,13 @@ static inline uint32_t pgm_read_dword_unaligned(const void *addr) {
     #define pgm_read_word(a)   pgm_read_word_unaligned(a)
     #define pgm_read_dword(a)  pgm_read_dword_unaligned(a)
     #define pgm_read_float(a)  pgm_read_float_unaligned(a)
+    #define pgm_read_double(a) pgm_read_double_unaligned(a)
     #define pgm_read_ptr(a)    pgm_read_ptr_unaligned(a)
 #else
     #define pgm_read_word(a)   pgm_read_word_aligned(a)
     #define pgm_read_dword(a)  pgm_read_dword_aligned(a)
     #define pgm_read_float(a)  pgm_read_float_aligned(a)
+    #define pgm_read_double(a) pgm_read_double_aligned(a)
     #define pgm_read_ptr(a)    pgm_read_ptr_aligned(a)
 #endif
 
@@ -146,11 +175,13 @@ static inline uint32_t pgm_read_dword_unaligned(const void *addr) {
 #define pgm_read_word_near(addr)        pgm_read_word(addr)
 #define pgm_read_dword_near(addr)       pgm_read_dword(addr)
 #define pgm_read_float_near(addr)       pgm_read_float(addr)
+#define pgm_read_double_near(addr)      pgm_read_double(addr)
 #define pgm_read_ptr_near(addr)         pgm_read_ptr(addr)
 #define pgm_read_byte_far(addr)         pgm_read_byte(addr)
 #define pgm_read_word_far(addr)         pgm_read_word(addr)
 #define pgm_read_dword_far(addr)        pgm_read_dword(addr)
 #define pgm_read_float_far(addr)        pgm_read_float(addr)
+#define pgm_read_double_far(addr)       pgm_read_double(addr)
 #define pgm_read_ptr_far(addr)          pgm_read_ptr(addr)
 
 #define _SFR_BYTE(n) (n)
