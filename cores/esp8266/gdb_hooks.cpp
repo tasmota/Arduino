@@ -21,24 +21,22 @@
 #include "gdb_hooks.h"
 
 
-/* gdb_init and gdb_do_break do not return anything, but since the return
-   value is in register, it doesn't hurt to return a bool, so that the
-   same stub can be used for gdb_present. */
 extern "C" {
 
-static bool ICACHE_RAM_ATTR __gdb_no_op()
-{
+void __attribute__((weak)) ICACHE_RAM_ATTR gdb_init(void) {}
+void __attribute__((weak)) ICACHE_RAM_ATTR gdb_do_break(void) {}
+bool __attribute__((weak)) ICACHE_RAM_ATTR gdb_present(void) {
     return false;
 }
-
-void gdb_init(void) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdb_do_break(void) __attribute__ ((weak, alias("__gdb_no_op")));
-bool gdb_present(void) __attribute__ ((weak, alias("__gdb_no_op")));
-bool gdbstub_has_putc1_control(void) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_set_putc1_callback(void (*func)(char)) __attribute__ ((weak, alias("__gdb_no_op")));
-bool gdbstub_has_uart_isr_control(void) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_set_uart_isr_callback(void (*func)(void*, uint8_t), void* arg) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_write_char(char c) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_write(const char* buf, size_t size) __attribute__ ((weak, alias("__gdb_no_op")));
+bool __attribute__((weak)) ICACHE_RAM_ATTR gdbstub_has_putc1_control(void) {
+    return false;
+}
+void __attribute__((weak)) ICACHE_RAM_ATTR gdbstub_set_putc1_callback(void (*)(char)) {}
+bool __attribute__((weak)) ICACHE_RAM_ATTR gdbstub_has_uart_isr_control(void) {
+    return false;
+}
+void __attribute__((weak)) ICACHE_RAM_ATTR gdbstub_set_uart_isr_callback(void (*)(void*, uint8_t), void*) {}
+void __attribute__((weak)) ICACHE_RAM_ATTR gdbstub_write_char(char) {}
+void __attribute__((weak)) ICACHE_RAM_ATTR gdbstub_write(const char*, size_t) {}
 
 };
