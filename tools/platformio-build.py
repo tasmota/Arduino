@@ -24,8 +24,7 @@ https://arduino.cc/en/Reference/HomePage
 
 # Extends: https://github.com/platformio/platform-espressif8266/blob/develop/builder/main.py
 
-import os
-from os.path import isfile, isdir, join
+from os.path import isdir, join
 
 from SCons import Util
 from SCons.Script import Builder, DefaultEnvironment
@@ -53,77 +52,23 @@ gzip_switch = []
 FRAMEWORK_DIR = platform.get_package_dir("framework-arduinoespressif8266")
 assert isdir(FRAMEWORK_DIR)
 
-TOOLCHAIN_DIR = platform.get_package_dir("toolchain-xtensa-esp8266")
-assert isdir(TOOLCHAIN_DIR)
-
-# GCC 16+ xtensa-esp-elf is a unified multi-target toolchain. The dynconfig
-# plugin selects the ESP8266 configuration: little-endian byte order, correct
-# multilib C++ headers, and target-specific ABI. Without it the compiler
-# defaults to big-endian, which makes the linker refuse to merge object files
-# with the little-endian pre-built SDK libraries.
-dynconfig = join(TOOLCHAIN_DIR, "lib", "xtensa_esp8266.so")
-DYNCONFIG_FLAGS = ["-mdynconfig=%s" % dynconfig] if isfile(dynconfig) else []
-
-# Dynamically resolve the GCC version directory under the toolchain's C++
-# include path so the build doesn't break when the toolchain is upgraded.
-# The path looks like: <TOOLCHAIN_DIR>/xtensa-esp-elf/include/c++/<version>/
-cxx_include_base = join(TOOLCHAIN_DIR, "xtensa-esp-elf", "include", "c++")
-gcc_version = None
-if os.path.isdir(cxx_include_base):
-    candidates = sorted(
-        d for d in os.listdir(cxx_include_base)
-        if os.path.isdir(join(cxx_include_base, d))
-    )
-    if candidates:
-        gcc_version = candidates[-1]  # pick the highest version present
-GCC_VERSION = gcc_version
-
-SDK_LIBC_PATH = join(FRAMEWORK_DIR, "tools", "sdk", "libc", "xtensa-lx106-elf", "lib")
-
 if gzip_fw:
     gzip_switch = ["--gzip", "PIO"]
 
 env.Append(
-    ASFLAGS=[
-        "-mlongcalls",
-        "-mtext-section-literals",
-        "-Wno-frame-address",
-        "-fno-builtin-memcpy",
-        "-fno-builtin-memset",
-        "-fno-builtin-bzero",
-    ],
-    ASPPFLAGS=[
-        "-Wno-frame-address",
-        "-mlongcalls",
-        "-fno-builtin-memcpy",
-        "-fno-builtin-memset",
-        "-fno-builtin-bzero",
-        "-x", "assembler-with-cpp",
-    ],
+    ASFLAGS=["-x", "assembler-with-cpp"],
 
-    # General options that are passed to the C compiler (C only; not C++)
     CFLAGS=[
-        "-std=gnu17",
+        "-std=gnu99",
         "-Wpointer-arith",
         "-Wno-implicit-function-declaration",
         "-Wl,-EL",
         "-fno-inline-functions",
-        "-nostdlib",
-        "-Wno-frame-address",
-        "-mlongcalls",
-        "-fno-builtin-memcpy",
-        "-fno-builtin-memset",
-        "-fno-builtin-bzero",
-        "-Wno-old-style-declaration",
-        "-fzero-init-padding-bits=all",
-        "-fno-malloc-dce",
-        "-Wno-enum-int-mismatch",
+        "-nostdlib"
     ],
 
-    # General options that are passed to the C and C++ compilers
     CCFLAGS=[
         "-Os",  # optimize for size
-        ] + DYNCONFIG_FLAGS + [
         "-mlongcalls",
         "-mtext-section-literals",
         "-falign-functions=4",
@@ -131,66 +76,17 @@ env.Append(
         "-ffunction-sections",
         "-fdata-sections",
         "-fno-exceptions",
-        "-Wall",
-        "-Werror=return-type",
-        "-free",
-        "-fipa-pta",
-        "-Wno-frame-address",
-        "-fno-builtin-memcpy",
-        "-fno-builtin-memset",
-        "-fno-builtin-bzero",
-        "-Wno-error=unused-function",
-        "-Wno-error=unused-variable",
-        "-Wno-error=unused-but-set-variable",
-        "-Wno-error=deprecated-declarations",
-        "-Wno-error=extra",
-        "-Wno-unused-parameter",
-        "-Wno-sign-compare",
-        "-Wno-enum-conversion",
-        "-gdwarf-4",
-        "-ggdb",
-        "-freorder-blocks",
-        "-mno-target-align",
-        "-Wno-address",
-        "-Wno-use-after-free",
-        "-Wno-xor-used-as-pow",
-        "-Wno-calloc-transposed-args",
-        "-fstrict-volatile-bitfields",
-        "-fno-jump-tables",
-        "-fno-tree-switch-conversion",
-        "-MMD",
+        "-Wall"
     ],
 
-    # General options that are passed to the C++ compiler
     CXXFLAGS=[
-        "-Wno-register",
         "-fno-rtti",
-        "-fno-sized-deallocation",
-        "-std=gnu++17",
-        "-fno-exceptions",
-        "-Wno-self-move",
-        "-Wno-dangling-reference",
-        # GCC 15+ xtensa-esp-elf toolchain: gthr-default.h is the POSIX threads
-        # variant; the ESP8266 bare-metal sysroot's pthread.h provides no types
-        # without _POSIX_THREADS. Pre-define the posix gthr guard and force-include
-        # the no-op single-thread stub so the full C++ library header chain works.
-        "-D_GLIBCXX_GCC_GTHR_POSIX_H",
-        "-include", join(TOOLCHAIN_DIR, "xtensa-esp-elf", "include", "c++",
-                         GCC_VERSION, "xtensa-esp-elf", "bits", "gthr-single.h"),
+        "-std=gnu++11"
     ],
 
     LINKFLAGS=[
         "-Os",
-        ] + DYNCONFIG_FLAGS + [
         "-nostdlib",
-        "-Wno-frame-address",
-        "-mlongcalls",
-        "-fno-builtin-memcpy",
-        "-fno-builtin-memset",
-        "-fno-builtin-bzero",
-        "-nostartfiles",
-        "-fno-rtti",
-        "-Wl,-no-warn-rwx-segments",
         "-Wl,--no-check-sections",
         "-Wl,-static",
         "-Wl,--gc-sections",
@@ -201,7 +97,7 @@ env.Append(
         "-u", "_DoubleExceptionVector",
         "-u", "_KernelExceptionVector",
         "-u", "_NMIExceptionVector",
-        "-u", "_UserExceptionVector",
+        "-u", "_UserExceptionVector"
     ],
 
     CPPDEFINES=[
@@ -221,10 +117,11 @@ env.Append(
         join(FRAMEWORK_DIR, "cores", env.BoardConfig().get("build.core"))
     ],
 
-    LIBPATH=[SDK_LIBC_PATH] + [
+    LIBPATH=[
         join("$BUILD_DIR", "ld"),  # eagle.app.v6.common.ld
         join(FRAMEWORK_DIR, "tools", "sdk", "lib"),
-        join(FRAMEWORK_DIR, "tools", "sdk", "ld")
+        join(FRAMEWORK_DIR, "tools", "sdk", "ld"),
+        join(FRAMEWORK_DIR, "tools", "sdk", "libc", "xtensa-lx106-elf", "lib")
     ],
 
     LIBS=[
@@ -248,7 +145,8 @@ env.Append(
                 "--flash_mode", "$BOARD_FLASH_MODE",
                 "--flash_freq", "${__get_board_f_flash(__env__)}",
                 "--flash_size", "${__get_flash_size(__env__)}",
-                "--path", '"%s"' % join(TOOLCHAIN_DIR, "bin"),
+                "--path", '"%s"' % join(
+                    platform.get_package_dir("toolchain-xtensa"), "bin"),
                 "--out", "$TARGET"
             ] + gzip_switch), "Building $TARGET"),
             suffix=".bin"
