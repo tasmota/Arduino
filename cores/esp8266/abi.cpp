@@ -25,7 +25,7 @@
 
 using __cxxabiv1::__guard;
 
-#if __GNUC__ >= 16 && !defined(__GXX_RTTI)
+#if __GNUC__ >= 15 && !defined(__GXX_RTTI)
 bool std::_Sp_make_shared_tag::_S_eq(const std::type_info&) noexcept
 {
     return false;
