@@ -24,6 +24,9 @@
 /* gdb_init and gdb_do_break do not return anything, but since the return
    value is in register, it doesn't hurt to return a bool, so that the
    same stub can be used for gdb_present. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattribute-alias"
+
 extern "C" {
 
 static bool ICACHE_RAM_ATTR __gdb_no_op()
@@ -42,3 +45,5 @@ void gdbstub_write_char(char c) __attribute__ ((weak, alias("__gdb_no_op")));
 void gdbstub_write(const char* buf, size_t size) __attribute__ ((weak, alias("__gdb_no_op")));
 
 };
+
+#pragma GCC diagnostic pop

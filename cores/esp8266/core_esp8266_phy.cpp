@@ -303,7 +303,7 @@ extern int __real_spi_flash_read(uint32_t addr, uint32_t* dst, size_t size);
 extern int ICACHE_RAM_ATTR __wrap_spi_flash_read(uint32_t addr, uint32_t* dst, size_t size);
 extern int __get_adc_mode();
 
-extern int ICACHE_RAM_ATTR __wrap_spi_flash_read(uint32_t addr, uint32_t* dst, size_t size)
+extern int __wrap_spi_flash_read(uint32_t addr, uint32_t* dst, size_t size)
 {
     if (!spoof_init_data || size != 128) {
         return __real_spi_flash_read(addr, dst, size);
