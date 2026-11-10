@@ -237,7 +237,7 @@ void Twi::enableSlave()
     }
 }
 
-void ICACHE_RAM_ATTR Twi::busywait(unsigned int v)
+void Twi::busywait(unsigned int v)
 {
     unsigned int i;
     for (i = 0; i < v; i++)  // loop time is 5 machine cycles: 31.25ns @ 160MHz, 62.5ns @ 80MHz
@@ -482,7 +482,7 @@ void Twi::attachSlaveTxEvent(void (*function)(void))
 // DO NOT INLINE, inlining reply() in combination with compiler optimizations causes function breakup into
 // parts and the ICACHE_RAM_ATTR isn't propagated correctly to all parts, which of course causes crashes.
 // TODO: test with gcc 9.x and if it still fails, disable optimization with -fdisable-ipa-fnsplit
-void ICACHE_RAM_ATTR Twi::reply(uint8_t ack)
+void Twi::reply(uint8_t ack)
 {
     // transmit master read ready signal, with or without ack
     if (ack)
@@ -500,7 +500,7 @@ void ICACHE_RAM_ATTR Twi::reply(uint8_t ack)
 }
 
 
-void ICACHE_RAM_ATTR Twi::releaseBus(void)
+void Twi::releaseBus(void)
 {
     // release bus
     //TWCR = _BV(TWEN) | _BV(TWIE) | _BV(TWEA) | _BV(TWINT);
@@ -513,7 +513,7 @@ void ICACHE_RAM_ATTR Twi::releaseBus(void)
 }
 
 
-void ICACHE_RAM_ATTR Twi::onTwipEvent(uint8_t status)
+void Twi::onTwipEvent(uint8_t status)
 {
     twip_status = status;
     switch (status)
