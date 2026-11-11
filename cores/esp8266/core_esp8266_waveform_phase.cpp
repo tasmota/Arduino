@@ -255,7 +255,7 @@ static inline ICACHE_RAM_ATTR int32_t scaleCcys(const int32_t ccys, const bool i
   }
 }
 
-static ICACHE_RAM_ATTR void timer1Interrupt() {
+static void timer1Interrupt() {
   const uint32_t isrStartCcy = ESP.getCycleCount();
   int32_t clockDrift = isrStartCcy - waveform.nextEventCcy;
   const bool isCPU2X = CPU2X & 1;
