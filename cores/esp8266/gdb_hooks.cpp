@@ -29,20 +29,23 @@
 
 extern "C" {
 
-static bool ICACHE_RAM_ATTR __gdb_no_op()
+bool __gdb_no_op()
 {
     return false;
 }
 
-void gdb_init(void) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdb_do_break(void) __attribute__ ((weak, alias("__gdb_no_op")));
+void __gdb_no_op_void()
+{}
+
+void gdb_init(void) __attribute__ ((weak, alias("__gdb_no_op_void")));
+void gdb_do_break(void) __attribute__ ((weak, alias("__gdb_no_op_void")));
 bool gdb_present(void) __attribute__ ((weak, alias("__gdb_no_op")));
 bool gdbstub_has_putc1_control(void) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_set_putc1_callback(void (*func)(char)) __attribute__ ((weak, alias("__gdb_no_op")));
+void gdbstub_set_putc1_callback(void (*func)(char)) __attribute__ ((weak, alias("__gdb_no_op_void")));
 bool gdbstub_has_uart_isr_control(void) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_set_uart_isr_callback(void (*func)(void*, uint8_t), void* arg) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_write_char(char c) __attribute__ ((weak, alias("__gdb_no_op")));
-void gdbstub_write(const char* buf, size_t size) __attribute__ ((weak, alias("__gdb_no_op")));
+void gdbstub_set_uart_isr_callback(void (*func)(void*, uint8_t), void* arg) __attribute__ ((weak, alias("__gdb_no_op_void")));
+void gdbstub_write_char(char c) __attribute__ ((weak, alias("__gdb_no_op_void")));
+void gdbstub_write(const char* buf, size_t size) __attribute__ ((weak, alias("__gdb_no_op_void")));
 
 };
 
