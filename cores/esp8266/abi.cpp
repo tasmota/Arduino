@@ -47,8 +47,13 @@ void *operator new(size_t size)
     if (0 != size && 0 == ret) {
         umm_last_fail_alloc_addr = __builtin_return_address(0);
         umm_last_fail_alloc_size = size;
+        // libstdc++ containers (e.g. std::vector) do not check the return
+        // value of operator new and assume it either succeeds or throws.
+        // Returning nullptr here would cause a NULL dereference; panic()
+        // turns the OOM into a controlled reset with diagnostics instead.
+        panic();
     }
-   return ret;
+    return ret;
 }
 
 void *operator new[](size_t size)
@@ -57,6 +62,7 @@ void *operator new[](size_t size)
     if (0 != size && 0 == ret) {
         umm_last_fail_alloc_addr = __builtin_return_address(0);
         umm_last_fail_alloc_size = size;
+        panic();
     }
     return ret;
 }
