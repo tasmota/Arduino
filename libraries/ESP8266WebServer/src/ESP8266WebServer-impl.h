@@ -488,23 +488,72 @@ void ESP8266WebServerTemplate<ServerType>::send(int code, const String& content_
   send(code, (const char*)content_type.c_str(), content);
 }
 
+// Write all of buf. A write returns less than requested only after HTTP_MAX_SEND_WAIT ms
+// without progress or when the connection closes, so the remainder is retried while
+// progress is made. Returns false if the data could not be fully written.
+template <typename ServerType>
+bool ESP8266WebServerTemplate<ServerType>::_writeAll(const uint8_t* buf, size_t len, bool pgm) {
+  while (len > 0) {
+    size_t n = pgm ? _currentClient.write_P((PGM_P)buf, len) : _currentClient.write(buf, len);
+    if ((n == 0) || (n > len)) {
+      return false;
+    }
+    buf += n;
+    len -= n;
+  }
+  return true;
+}
+
+// End the response as incomplete: clearing _chunked prevents a terminal chunk, and
+// closing the client makes later sendContent() calls no-ops (status() is CLOSED)
+template <typename ServerType>
+void ESP8266WebServerTemplate<ServerType>::_abortResponse() {
+#ifdef DEBUG_ESP_HTTP_SERVER
+  DEBUG_OUTPUT.println("HTTPServer: error: short send, response aborted");
+#endif
+  _chunked = false;
+  _currentClient.stop(1);
+}
+
+// The terminal chunk is sent in one write so it leaves in a single segment.
+// _chunked is cleared first, even when nothing is written (HEAD, closed client),
+// so the chunk is sent only once and the flag cannot leak into the next response
+template <typename ServerType>
+void ESP8266WebServerTemplate<ServerType>::_endChunked() {
+  _chunked = false;
+  if (_currentMethod == HTTP_HEAD) return;
+  if (_currentClient.status() == CLOSED) return;
+  if (!_writeAll((const uint8_t*)"0\r\n\r\n", 5, false)) {
+    _abortResponse();
+  }
+}
+
+template <typename ServerType>
+void ESP8266WebServerTemplate<ServerType>::_sendContentChecked(const uint8_t* content, size_t len, bool pgm) {
+  if (_chunked && (len == 0)) {
+    _endChunked();
+    return;
+  }
+  if (_currentMethod == HTTP_HEAD) return;
+  if (_currentClient.status() == CLOSED) return;  // aborted or closed: suppress
+  bool ok;
+  if (_chunked) {
+    char chunkSize[11];
+    snprintf_P(chunkSize, sizeof(chunkSize), PSTR("%zx\r\n"), len);
+    ok = _writeAll((const uint8_t*)chunkSize, strlen(chunkSize), false) &&
+         _writeAll(content, len, pgm) &&
+         _writeAll((const uint8_t*)"\r\n", 2, false);
+  } else {
+    ok = _writeAll(content, len, pgm);
+  }
+  if (!ok) {
+    _abortResponse();
+  }
+}
+
 template <typename ServerType>
 void ESP8266WebServerTemplate<ServerType>::sendContent(const String& content) {
-  if (_currentMethod == HTTP_HEAD) return;
-  const char * footer = "\r\n";
-  size_t len = content.length();
-  if(_chunked) {
-    char chunkSize[11];
-    sprintf(chunkSize, "%zx\r\n", len);
-    _currentClient.write((const uint8_t *)chunkSize, strlen(chunkSize));
-  }
-  _currentClient.write((const uint8_t *)content.c_str(), len);
-  if(_chunked){
-    _currentClient.write((const uint8_t *)footer, 2);
-    if (len == 0) {
-      _chunked = false;
-    }
-  }
+  _sendContentChecked((const uint8_t*)content.c_str(), content.length(), false);
 }
 
 template <typename ServerType>
@@ -514,19 +563,7 @@ void ESP8266WebServerTemplate<ServerType>::sendContent_P(PGM_P content) {
 
 template <typename ServerType>
 void ESP8266WebServerTemplate<ServerType>::sendContent_P(PGM_P content, size_t size) {
-  const char * footer = "\r\n";
-  if(_chunked) {
-    char chunkSize[11];
-    sprintf(chunkSize, "%zx\r\n", size);
-    _currentClient.write((const uint8_t *)chunkSize, strlen(chunkSize));
-  }
-  _currentClient.write_P(content, size);
-  if(_chunked){
-    _currentClient.write((const uint8_t *)footer, 2);
-    if (size == 0) {
-      _chunked = false;
-    }
-  }
+  _sendContentChecked((const uint8_t*)content, size, true);
 }
 
 template <typename ServerType>
