@@ -197,6 +197,10 @@ protected:
   void _addRequestHandler(RequestHandlerType* handler);
   void _handleRequest();
   void _finalizeResponse();
+  bool _writeAll(const uint8_t* buf, size_t len, bool pgm);
+  void _abortResponse();
+  void _endChunked();
+  void _sendContentChecked(const uint8_t* content, size_t len, bool pgm);
   bool _parseRequest(ClientType& client);
   void _parseArguments(const String& data);
   int _parseArgumentsPrivate(const String& data, std::function<void(String&,String&,const String&,int,int,int,int)> handler);
